@@ -87,10 +87,6 @@ function setStoredTheme(v) {
   localStorage.setItem("fm_theme", v);
 }
 
-/**
- * ReactMarkdown children mogą być stringami albo elementami.
- * TOC potrzebuje “czystego tekstu”, więc wyciągamy tekst rekurencyjnie.
- */
 function nodeToText(node) {
   if (node == null) return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
