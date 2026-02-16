@@ -1,7 +1,7 @@
 ---
 id: offsec-intro
 title: "Offensive Security: myślenie jak atakujący"
-team: neutral
+team: red
 category: General
 tags: ["offsec", "mindset", "recon", "web"]
 difficulty: easy
