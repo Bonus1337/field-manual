@@ -1,3 +1,5 @@
+import { buildToc } from "./toc";
+
 function parseFrontmatter(raw) {
   const fm = { data: {}, content: raw };
 
@@ -47,11 +49,30 @@ function parseFrontmatter(raw) {
   return fm;
 }
 
-const modules = import.meta.glob("../../content/**/*.md", { as: "raw", eager: true });
+const modules = import.meta.glob("../../content/**/*.md", {
+  as: "raw",
+  eager: true,
+});
 
 function normalizePath(p) {
   const idx = p.lastIndexOf("/content/");
   return idx >= 0 ? p.slice(idx) : p;
+}
+
+function getNavFromPath(path, localePrefix) {
+  const rel = path.startsWith(localePrefix) ? path.slice(localePrefix.length) : path;
+  const parts = rel.split("/").filter(Boolean);
+
+  const root = parts[0] || "general";
+  const isWriteup = parts[1] === "writeups";
+  const topic = isWriteup ? parts[2] || "misc" : null;
+
+  return {
+    root,
+    isWriteup,
+    topic,
+    navPath: isWriteup ? [root, "writeups", topic] : [root],
+  };
 }
 
 function loadLocale(locale) {
@@ -65,18 +86,27 @@ function loadLocale(locale) {
     const { data, content } = parseFrontmatter(raw);
 
     const id = data.id || path.split("/").pop().replace(".md", "");
+    const nav = getNavFromPath(path, localePrefix);
+
+    const autoCategory = nav.isWriteup
+      ? `${nav.root}/writeups/${nav.topic}`
+      : nav.root === "general"
+        ? "General"
+        : nav.root;
 
     docs.push({
       id,
       locale,
       title: data.title || id,
       team: data.team || "neutral",
-      category: data.category || "General",
+      category: data.category || autoCategory,
       tags: Array.isArray(data.tags) ? data.tags : data.tags ? [data.tags] : [],
       difficulty: data.difficulty || "unknown",
       updatedAt: data.updatedAt || null,
       sourcePath: path.replace("/content/", "content/"),
       content,
+      toc: buildToc(content),
+      nav,
     });
   }
 
@@ -97,9 +127,9 @@ export function loadContentBilingual() {
   canon.sort((a, b) => {
     const t = (order[a.team] ?? 9) - (order[b.team] ?? 9);
     if (t !== 0) return t;
-    const c = a.category.localeCompare(b.category);
+    const c = (a.category || "").localeCompare(b.category || "");
     if (c !== 0) return c;
-    return a.title.localeCompare(b.title);
+    return (a.title || "").localeCompare(b.title || "");
   });
 
   return { map, canon };

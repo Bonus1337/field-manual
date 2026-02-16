@@ -13,7 +13,7 @@ updatedAt: "2026-02-15"
 I’m **Bonus1337**.
 
 I’m building this Field Manual because I got tired of hunting the same commands and procedures across bookmarks, old notes, and Discord threads.
-This is not a “learn hacking in a weekend” thing — it’s **field notes + repeatable procedures** for labs and real assessments.
+This is not a “learn hacking in a weekend” thing - it’s **field notes + repeatable procedures** for labs and real assessments.
 
 ## How I think about security
 
@@ -29,4 +29,4 @@ People who:
 - do CTF/labs and prefer “field notes” over textbooks
 - want to understand tools, not just copy commands
 
-> If you find an issue or have a better approach — PRs welcome.
+> If you find an issue or have a better approach - PRs welcome.

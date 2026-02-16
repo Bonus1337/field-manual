@@ -35,7 +35,7 @@ const UI = {
     edit: "Edytuj na GitHub",
     updated: "Aktualizacja",
     difficulty: "Poziom",
-    fallback: "Brak tej wersji językowej — pokazuję dostępną.",
+    fallback: "Brak tej wersji językowej - pokazuję dostępną.",
     onThisPage: "Na tej stronie",
     next: "Następna",
     prev: "Poprzednia",
@@ -45,7 +45,7 @@ const UI = {
     edit: "Edit on GitHub",
     updated: "Updated",
     difficulty: "Difficulty",
-    fallback: "No translation available — showing the other language.",
+    fallback: "No translation available - showing the other language.",
     onThisPage: "On this page",
     next: "Next",
     prev: "Previous",
@@ -97,6 +97,14 @@ function nodeToText(node) {
   return "";
 }
 
+function titleize(s = "") {
+  return s
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function CodeBlock({ code, language }) {
   const [copied, setCopied] = useState(false);
 
@@ -136,30 +144,55 @@ function CodeBlock({ code, language }) {
 }
 
 function Markdown({ content }) {
+  const usedIdsRef = useRef(new Map());
+
+  useEffect(() => {
+    usedIdsRef.current = new Map();
+  }, [content]);
+
+  const computeHeading = (children) => {
+    const text = nodeToText(children).trim();
+
+    const m = text.match(/\s*\{#([a-z0-9\-_]+)\}\s*$/i);
+    const visibleText = m ? text.replace(m[0], "").trim() : text;
+    const baseId = m ? m[1] : slugify(visibleText);
+
+    const used = usedIdsRef.current;
+    const prev = used.get(baseId) ?? 0;
+    used.set(baseId, prev + 1);
+
+    const id = prev > 0 ? `${baseId}-${prev + 1}` : baseId;
+
+    return { id, visibleText, hasExplicit: Boolean(m), rawText: text };
+  };
+
   return (
     <div className="prose prose-slate max-w-none dark:prose-invert prose-headings:scroll-mt-24">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          pre({ children }) {
+            return <>{children}</>;
+          },
+
           h1({ children }) {
-            const text = nodeToText(children).trim();
-            const id = slugify(text);
-            return <h1 id={id}>{children}</h1>;
+            const { id, visibleText, hasExplicit } = computeHeading(children);
+            return <h1 id={id}>{hasExplicit ? visibleText : children}</h1>;
           },
           h2({ children }) {
-            const text = nodeToText(children).trim();
-            const id = slugify(text);
-            return <h2 id={id}>{children}</h2>;
+            const { id, visibleText, hasExplicit } = computeHeading(children);
+            return <h2 id={id}>{hasExplicit ? visibleText : children}</h2>;
           },
           h3({ children }) {
-            const text = nodeToText(children).trim();
-            const id = slugify(text);
-            return <h3 id={id}>{children}</h3>;
+            const { id, visibleText, hasExplicit } = computeHeading(children);
+            return <h3 id={id}>{hasExplicit ? visibleText : children}</h3>;
           },
 
           code({ inline, className, children }) {
             const raw = String(children ?? "");
-            const match = /language-(\w+)/.exec(className || "");
+            const trimmed = raw.replace(/\n$/, "");
+            const match = /language-([\w-]+)/.exec(className || "");
+            const hasLang = Boolean(match?.[1]);
 
             if (inline) {
               return (
@@ -168,6 +201,15 @@ function Markdown({ content }) {
                 </code>
               );
             }
+            const isSingleLine = !trimmed.includes("\n");
+            if (!hasLang && isSingleLine && trimmed.trim().length <= 120) {
+              return (
+                <code className="inline-flex max-w-full overflow-x-auto rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[0.9em] text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                  {trimmed.trim()}
+                </code>
+              );
+            }
+
             return <CodeBlock code={raw} language={match?.[1]} />;
           },
 
@@ -259,23 +301,65 @@ export default function SecurityGuidebook() {
     return fuse.search(query).map((r) => r.item);
   }, [query, fuse, sidebarItems]);
 
-  const grouped = useMemo(() => {
-    const groups = new Map();
+  const sections = useMemo(() => {
+    const secMap = new Map();
+
     for (const d of filtered) {
-      const key = `${d.team}::${d.category}`;
-      if (!groups.has(key))
-        groups.set(key, { team: d.team, category: d.category, items: [] });
-      groups.get(key).items.push(d);
+      const nav = d.nav || null;
+
+      let sectionLabel = d.category || "General";
+      let subLabel = "";
+
+      if (nav?.root === "portswigger") {
+        sectionLabel = nav.isWriteup ? "PortSwigger Writeups" : "PortSwigger Academy";
+        subLabel = nav.isWriteup
+          ? titleize(nav.topic || "misc")
+          : d.category || "Chapters";
+      } else if (nav?.root && nav.root !== "general") {
+        sectionLabel = titleize(nav.root);
+        subLabel = d.category || "";
+      } else {
+        sectionLabel = d.category || "General";
+        subLabel = "";
+      }
+
+      const key = `${d.team}::${sectionLabel}`;
+      if (!secMap.has(key)) {
+        secMap.set(key, {
+          team: d.team,
+          sectionLabel,
+          subs: new Map(),
+        });
+      }
+      const sec = secMap.get(key);
+
+      const subKey = subLabel || "__root__";
+      if (!sec.subs.has(subKey)) sec.subs.set(subKey, { label: subLabel, items: [] });
+      sec.subs.get(subKey).items.push(d);
     }
+
     const order = { neutral: 0, blue: 1, red: 2 };
-    return Array.from(groups.values()).sort((a, b) => {
+    const out = Array.from(secMap.values()).sort((a, b) => {
       const t = (order[a.team] ?? 9) - (order[b.team] ?? 9);
       if (t !== 0) return t;
-      return a.category.localeCompare(b.category);
+      return a.sectionLabel.localeCompare(b.sectionLabel);
     });
+
+    for (const sec of out) {
+      const subsArr = Array.from(sec.subs.values());
+      subsArr.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+      for (const sub of subsArr) sub.items.sort((a, b) => a.title.localeCompare(b.title));
+      sec.subsArr = subsArr;
+    }
+
+    return out;
   }, [filtered]);
 
-  const toc = useMemo(() => (doc ? buildToc(doc.content) : []), [doc]);
+  const toc = useMemo(() => {
+    if (!doc) return [];
+    if (Array.isArray(doc.toc) && doc.toc.length) return doc.toc;
+    return buildToc(doc.content);
+  }, [doc]);
 
   const docIndex = useMemo(
     () => canon.findIndex((d) => d.id === (doc?.id ?? "")),
@@ -293,7 +377,7 @@ export default function SecurityGuidebook() {
   const onGoDoc = (docId) => {
     navigate(`/${safeLang}/doc/${docId}`);
     const root = mainRef.current;
-    if (root) root.scrollTo({ top: 0, behavior: "instant" });
+    if (root) root.scrollTo({ top: 0, behavior: "auto" });
   };
 
   const editUrl = doc ? `${SITE.repoUrl}/blob/main/${doc.sourcePath}` : SITE.repoUrl;
@@ -304,7 +388,6 @@ export default function SecurityGuidebook() {
     if (!root || toc.length === 0) return;
 
     const targets = toc.map((t) => document.getElementById(t.id)).filter(Boolean);
-
     if (targets.length === 0) return;
 
     const obs = new IntersectionObserver(
@@ -325,6 +408,19 @@ export default function SecurityGuidebook() {
     targets.forEach((el) => obs.observe(el));
     return () => obs.disconnect();
   }, [toc, doc?.id, theme, safeLang]);
+
+  const scrollToHeading = (headingId) => {
+    const root = mainRef.current;
+    const el = document.getElementById(headingId);
+    if (!root || !el) return;
+
+    const HEADER_OFFSET = 88;
+    const rootRect = root.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const top = elRect.top - rootRect.top + root.scrollTop - HEADER_OFFSET;
+
+    root.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  };
 
   if (!doc) {
     return (
@@ -422,13 +518,13 @@ export default function SecurityGuidebook() {
             </div>
 
             <nav className="flex-1 overflow-y-auto px-3 pb-6">
-              {grouped.map((g) => {
-                const gm = teamMeta(g.team);
+              {sections.map((sec) => {
+                const gm = teamMeta(sec.team);
                 return (
-                  <div key={`${g.team}-${g.category}`} className="mb-6">
+                  <div key={`${sec.team}-${sec.sectionLabel}`} className="mb-6">
                     <div className="px-2 mb-2 flex items-center justify-between">
                       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                        {g.category}
+                        {sec.sectionLabel}
                       </div>
                       <span
                         className={cx(
@@ -440,23 +536,35 @@ export default function SecurityGuidebook() {
                       </span>
                     </div>
 
-                    <div className="space-y-1">
-                      {g.items.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => onGoDoc(item.id)}
-                          className={cx(
-                            "w-full text-left rounded-lg px-3 py-2 border text-sm",
-                            item.id === doc.id
-                              ? "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-[#0f1624]"
-                              : "border-transparent hover:border-slate-200 hover:bg-slate-50 dark:hover:border-slate-700 dark:hover:bg-[#0f1624]/60"
-                          )}
-                        >
-                          <div className="truncate">{item.title}</div>
-                          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                            {item.tags?.length ? item.tags.join(" • ") : ""}
+                    <div className="space-y-3">
+                      {sec.subsArr.map((sub) => (
+                        <div key={sub.label || "__root__"}>
+                          {sub.label ? (
+                            <div className="px-2 mb-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                              {sub.label}
+                            </div>
+                          ) : null}
+
+                          <div className="space-y-1">
+                            {sub.items.map((item) => (
+                              <button
+                                key={item.id}
+                                onClick={() => onGoDoc(item.id)}
+                                className={cx(
+                                  "w-full text-left rounded-lg px-3 py-2 border text-sm",
+                                  item.id === doc.id
+                                    ? "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-[#0f1624]"
+                                    : "border-transparent hover:border-slate-200 hover:bg-slate-50 dark:hover:border-slate-700 dark:hover:bg-[#0f1624]/60"
+                                )}
+                              >
+                                <div className="truncate">{item.title}</div>
+                                <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                  {item.tags?.length ? item.tags.join(" • ") : ""}
+                                </div>
+                              </button>
+                            ))}
                           </div>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -494,7 +602,6 @@ export default function SecurityGuidebook() {
           </div>
         </aside>
 
-        {/* Main — IMPORTANT: to jest scroll container */}
         <main ref={mainRef} className="flex-1 relative h-full overflow-y-auto min-w-0">
           {!sidebarOpen && (
             <button
@@ -594,16 +701,12 @@ export default function SecurityGuidebook() {
 
                 <div className="mt-3 space-y-1">
                   {toc.length === 0 ? (
-                    <div className="text-sm text-slate-500 dark:text-slate-400">—</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">-</div>
                   ) : (
                     toc.map((item) => (
                       <button
                         key={item.id}
-                        onClick={() => {
-                          const el = document.getElementById(item.id);
-                          if (el)
-                            el.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }}
+                        onClick={() => scrollToHeading(item.id)}
                         className={cx(
                           "w-full text-left rounded-md px-2 py-1 text-sm transition",
                           activeTocId === item.id

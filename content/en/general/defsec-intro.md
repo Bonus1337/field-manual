@@ -32,7 +32,7 @@ In practice, it’s about:
 - **Vulnerability Management** – reduce attack surface before it gets abused.
 - **Investigation & Analysis** – separate noise from real signals, build timelines and scope.
 
-These aren’t separate silos — they’re one loop.
+These aren’t separate silos - they’re one loop.
 
 ---
 
@@ -53,9 +53,9 @@ For the business, it’s not “embarrassment”. It’s:
 
 ---
 
-## SOC roles — who does what (and why)
+## SOC roles - who does what (and why)
 
-A **SOC** is the defensive operations center — often 24/7.
+A **SOC** is the defensive operations center - often 24/7.
 
 Typical roles:
 
@@ -119,7 +119,7 @@ It’s enabling:
 - incident timelines
 
 **Real-world issue:** alert fatigue.  
-The best SOC doesn’t have the most alerts — it has the **most actionable** ones.
+The best SOC doesn’t have the most alerts - it has the **most actionable** ones.
 
 ---
 
@@ -145,6 +145,6 @@ Key questions (order matters):
 ## TL;DR (save-worthy)
 
 - Blue team wins with **time + process**, not “tool magic”.
-- A SOC is people + workflow + tooling — **not SIEM alone**.
+- A SOC is people + workflow + tooling - **not SIEM alone**.
 - Defence in Depth works when layers are real (policy + telemetry + response).
 - “Web discovery” is a signal: attack surface exists → detect, contain, fix.

@@ -13,7 +13,7 @@ updatedAt: "2026-02-15"
 Jestem **Bonus1337**.
 
 Buduję ten Field Manual, bo mam dość szukania tych samych rzeczy po zakładkach, starych notatkach i Discordzie.
-To nie jest kurs “od zera” — to **ściąga + procedury**, które da się odpalić w labach i w realnych audytach.
+To nie jest kurs “od zera” - to **ściąga + procedury**, które da się odpalić w labach i w realnych audytach.
 
 ## Jak myślę o bezpieczeństwie
 
@@ -29,4 +29,4 @@ Dla ludzi, którzy:
 - robią CTF / laby i lubią “field notes” zamiast podręcznika
 - chcą rozumieć narzędzia, a nie tylko kopiować komendy
 
-> Jeśli widzisz błąd, masz lepszy wariant lub chcesz dopisać sekcję — PR mile widziany.
+> Jeśli widzisz błąd, masz lepszy wariant lub chcesz dopisać sekcję - PR mile widziany.

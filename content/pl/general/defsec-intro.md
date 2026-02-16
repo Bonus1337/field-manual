@@ -32,7 +32,7 @@ W praktyce liczy się:
 - **Vulnerability Management** – zmniejszasz powierzchnię ataku zanim ktoś ją wykorzysta.
 - **Investigation & Analysis** – oddzielasz “szum” od realnego zagrożenia.
 
-To nie są osobne światy — to jeden workflow.
+To nie są osobne światy - to jeden workflow.
 
 ---
 
@@ -53,9 +53,9 @@ Dla firmy to nie “wstyd”. To:
 
 ---
 
-## Role w SOC — kto robi co (i po co)
+## Role w SOC - kto robi co (i po co)
 
-**SOC** to “centrum obrony” firmy — często 24/7.
+**SOC** to “centrum obrony” firmy - często 24/7.
 
 W środku typowo spotkasz:
 
@@ -119,7 +119,7 @@ Tylko że pozwala:
 - mieć timeline zdarzeń
 
 **Problem w realu:** alert fatigue.  
-Najlepszy SOC to nie ten, który ma najwięcej alertów — tylko ten, który ma **najbardziej użyteczne**.
+Najlepszy SOC to nie ten, który ma najwięcej alertów - tylko ten, który ma **najbardziej użyteczne**.
 
 ---
 
@@ -145,6 +145,6 @@ Twoje pytania (kolejność ma znaczenie):
 ## TL;DR (save-worthy)
 
 - Blue team wygrywa **czasem i procesem**, nie “magicznym narzędziem”.
-- SOC to ludzie + workflow + narzędzia — **nie sam SIEM**.
+- SOC to ludzie + workflow + narzędzia - **nie sam SIEM**.
 - Defence in Depth działa tylko wtedy, gdy warstwy są realne (polityki + telemetry + reakcja).
 - “Web discovery” to sygnał: aplikacja ma powierzchnię ataku → detekcja + kontrola + naprawa.

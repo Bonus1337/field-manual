@@ -13,7 +13,7 @@ updatedAt: "2026-02-15"
 > “To outsmart a hacker, you need to think like one.”
 
 It sounds like a poster quote, but it captures the key shift: you don’t learn tools to “hack”.
-You learn them to understand **how systems fail** — so you can fix weaknesses before someone abuses them.
+You learn them to understand **how systems fail** - so you can fix weaknesses before someone abuses them.
 
 Offensive Security is not “payload magic”. It’s a method: **simulate attacker behavior** to discover vulnerabilities and weak controls.
 
@@ -40,7 +40,7 @@ This happens in the real world more often than people think:
 - UI hides a function, backend still accepts it
 - someone “secured” a panel by removing it from the menu
 
-That’s not Hollywood hacking — it’s broken engineering and release hygiene.
+That’s not Hollywood hacking - it’s broken engineering and release hygiene.
 
 ### 3) Enumeration (dir/content discovery) is a web pentest baseline
 

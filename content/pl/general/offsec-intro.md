@@ -39,7 +39,7 @@ To się dzieje w świecie realnym częściej niż ludziom się wydaje:
 - UI nie linkuje do funkcji, ale backend ją nadal obsługuje
 - ktoś “ukrył” panel, bo nie ma go w menu
 
-To nie jest “hacking” w hollywoodzkim sensie — to błąd procesu wytwarzania i publikacji.
+To nie jest “hacking” w hollywoodzkim sensie - to błąd procesu wytwarzania i publikacji.
 
 ### 3) Enumeration (dir/content discovery) to fundament web pentestu
 
