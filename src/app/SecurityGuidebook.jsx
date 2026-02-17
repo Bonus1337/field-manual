@@ -196,6 +196,29 @@ function CodeBlock({ code, language }) {
 function Markdown({ content }) {
   const usedIdsRef = useRef(new Map());
 
+  const [lightbox, setLightbox] = useState({
+    open: false,
+    src: "",
+    alt: "",
+  });
+
+  useEffect(() => {
+    if (!lightbox.open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [lightbox.open]);
+
+  useEffect(() => {
+    if (!lightbox.open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setLightbox({ open: false, src: "", alt: "" });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox.open]);
   useEffect(() => {
     usedIdsRef.current = new Map();
   }, [content]);
@@ -241,7 +264,26 @@ function Markdown({ content }) {
             const { id, visibleText, hasExplicit } = computeHeading(children);
             return <h4 id={id}>{hasExplicit ? visibleText : children}</h4>;
           },
+          img({ src, alt }) {
+            const s = String(src || "");
+            const a = String(alt || "");
 
+            return (
+              <button
+                type="button"
+                onClick={() => setLightbox({ open: true, src: s, alt: a })}
+                className="my-4 block w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-800 dark:bg-slate-950"
+                title="Kliknij, żeby powiększyć"
+              >
+                <img
+                  src={s}
+                  alt={a}
+                  className="w-full h-auto cursor-zoom-in"
+                  loading="lazy"
+                />
+              </button>
+            );
+          },
           code({ inline, className, children }) {
             const raw = String(children ?? "");
             const trimmed = raw.replace(/\n$/, "");
@@ -279,6 +321,42 @@ function Markdown({ content }) {
       >
         {content}
       </ReactMarkdown>
+      {lightbox.open && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm"
+          onClick={() => setLightbox({ open: false, src: "", alt: "" })}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative max-h-[90vh] max-w-[95vw]">
+              <button
+                type="button"
+                onClick={() => setLightbox({ open: false, src: "", alt: "" })}
+                className="absolute -top-3 -right-3 rounded-full border border-slate-200 bg-white p-2 shadow-md hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+                title="Zamknij"
+              >
+                <X size={16} />
+              </button>
+
+              <img
+                src={lightbox.src}
+                alt={lightbox.alt}
+                className="max-h-[90vh] max-w-[95vw] rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-950 cursor-zoom-out"
+                onClick={() => setLightbox({ open: false, src: "", alt: "" })}
+              />
+              {lightbox.alt ? (
+                <div className="mt-2 text-center text-xs text-slate-200/90">
+                  {lightbox.alt}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
