@@ -8,28 +8,37 @@ difficulty: medium
 updatedAt: "2026-02-16"
 ---
 
-Access control to nie “czy masz konto”, tylko **czy aplikacja ma prawo wykonać konkretną akcję dla konkretnego użytkownika**.
+Access control (kontrola dostępu) to zestaw mechanizmów, które decydują **kto** może dostać się do **jakich zasobów** i wykonać **jakie akcje** - oraz (w dojrzałych systemach) pozwalają to sensownie rozliczyć/audytować.
 
-W praktyce to najczęstsza przyczyna “poważnych” incydentów webowych, bo zwykle prowadzi do:
+W praktyce warto myśleć o tym jak o AAA:
 
-- podglądu cudzych danych,
-- przejęcia kont,
-- wykonywania akcji admina,
+- **Authentication**: potwierdzenie tożsamości (kim jesteś).
+- **Authorization**: egzekwowanie uprawnień (co wolno tej tożsamości zrobić / zobaczyć).
+- **Accountability / Accounting**: ślad działań (kto/co/kiedy zrobił; logi/audyt).
+
+Kontrola dostępu jest częstym źródłem incydentów webowych, ale skutki są różne - od drobnych wycieków po krytyczne eskalacje. Zależy to od tego, **jakie dane/akcje** stoją za danym endpointem.
+
+Najczęstsze konsekwencje (gdy błąd dotyczy wrażliwych funkcji) to m.in.:
+
+- podgląd cudzych danych,
+- wykonywanie akcji na cudzych zasobach,
+- operacje o wyższych uprawnieniach (np. admin),
 - zmiany ról / uprawnień,
-- kasowania zasobów.
+- kasowanie zasobów.
 
 ---
 
-## Jak to się składa: AuthN vs Session vs AuthZ
+## Jak to się składa: authentication vs session vs authorization
 
-- **Authentication (AuthN)**: kim jesteś (logowanie).
-- **Session management**: czy to nadal Ty (cookie/token, ciągłość żądań).
-- **Authorization (AuthZ / access control)**: co wolno tej tożsamości zrobić / zobaczyć.
+- **Authentication**: kim jesteś (logowanie).
+- **Session management**: czy to nadal Ty (cookie/token, ciągłość żądań, wygasanie).
+- **Authorization (access control)**: co wolno tej tożsamości zrobić / zobaczyć.
 
-Błędy access control prawie zawsze wynikają z tego, że aplikacja:
+Błędy access control nie zawsze wynikają z „ufania danym klienta” lub „ukrytego UI”.
+Najczęściej w praktyce dzieją się przez:
 
-- ufa temu, co kontroluje użytkownik (parametr/cookie/JS),
-- albo zakłada, że “jak UI nie pokazuje, to nikt nie wejdzie”.
+- **brak egzekwowania** kontroli w jakimś miejscu (ktoś nie sprawdził roli/uprawnień),
+- albo **błąd w implementacji** mechanizmu autoryzacji (zły warunek, niespójne reguły, inna interpretacja zasobu).
 
 ---
 
@@ -40,7 +49,8 @@ Błędy access control prawie zawsze wynikają z tego, że aplikacja:
 Różne role mają dostęp do różnych funkcji.
 Przykłady: panel administracyjny, zarządzanie użytkownikami, zmiany ról.
 
-**Typowy błąd:** funkcja istnieje na backendzie, ale ograniczenie jest “symboliczne” (np. tylko ukryty link w UI).
+**Typowy błąd:** endpoint działa dla „dowolnego zalogowanego”, bo jest sprawdzenie sesji,
+ale **brakuje sprawdzenia roli/uprawnienia** (albo jest niespójne).
 
 ---
 
@@ -49,7 +59,10 @@ Przykłady: panel administracyjny, zarządzanie użytkownikami, zmiany ról.
 Każdy użytkownik ma dostęp do “swojej” części zasobów (konto, dokumenty, zamówienia).
 Przykłady: `myaccount?id=...` `orders?user=...` pobieranie plików po ID.
 
-**Typowy błąd:** aplikacja bierze identyfikator obiektu z parametru i nie sprawdza właściciela (IDOR).
+**Typowy błąd (sztampowy wzorzec):** aplikacja pozwala odwołać się do obiektu na podstawie
+identyfikatora przekazanego przez użytkownika i **nie weryfikuje relacji** (właściciel/tenant).
+
+To często kończy się IDOR-em jako rezultatem.
 
 ---
 
@@ -58,7 +71,8 @@ Przykłady: `myaccount?id=...` `orders?user=...` pobieranie plików po ID.
 Dostęp zależy od tego, na jakim etapie procesu jesteś.
 Przykłady: koszyk po płatności, zmiana danych po potwierdzeniu, workflow “krok 1 → krok 2 → confirm”.
 
-**Typowy błąd:** kontrola jest na części kroków, ale jeden krok da się wywołać “na skróty”.
+**Typowy błąd:** kontrola jest na części kroków, ale jeden krok da się wywołać “na skróty”
+(albo warunek stanu nie jest egzekwowany po stronie serwera).
 
 ---
 
@@ -68,6 +82,8 @@ Przykłady: koszyk po płatności, zmiana danych po potwierdzeniu, workflow “k
 
 To, że czegoś nie widać w menu, nie znaczy, że backend tego nie obsłuży.
 **Ukrycie linka** to nie zabezpieczenie - to tylko UX.
+
+> To w praktyce jest ten sam rdzeń problemu co „security by obscurity”: brak serwerowego enforcementu.
 
 ---
 
@@ -85,39 +101,44 @@ Jeśli aplikacja podejmuje decyzję “czy jesteś adminem” na podstawie warto
 - cookie typu `Admin=false`
 - parametr `role=1`
 - pole ukryte `isAdmin=0`
-  to to nie jest kontrola dostępu - to proszenie się o eskalację.
+
+to problemem nie jest „sam parametr”, tylko fakt, że **serwer ufa danym klienta** w decyzji autoryzacyjnej.
 
 ---
 
 ## IDOR w praktyce (najczęstszy wzorzec wycieku danych)
 
-**IDOR (Insecure Direct Object Reference)** = aplikacja pozwala odwołać się do obiektu po identyfikatorze dostarczonym przez użytkownika, bez twardej walidacji uprawnień.
+**IDOR (Insecure Direct Object Reference)** = sytuacja, w której użytkownik może odwołać się do obiektu
+po identyfikatorze dostarczonym przez siebie, a aplikacja nie egzekwuje poprawnie uprawnień do tego obiektu.
 
 Najczęstsze formy:
 
 - numeryczne ID (łatwe do zgadywania),
 - GUIDy/UUID (trudniejsze do zgadywania, ale często **wyciekają w UI**: profile, posty, komentarze, linki).
 
-**Podstępny wariant:** odpowiedź robi redirect, ale **w treści odpowiedzi nadal są dane**. Jeśli ktoś patrzy tylko na “przekierowało do loginu”, może nie zauważyć wycieku.
+**Podstępny wariant (edge-case):** odpowiedź robi redirect, ale **w treści odpowiedzi nadal są dane**.
+To często wynika z błędu implementacyjnego (np. brak przerwania wykonania kodu po przekierowaniu),
+a skutkiem końcowym może być wyciek „jak przy IDOR”.
 
 ---
 
-## Warstwy po drodze: frontend, reverse proxy, backend
+## Warstwy po drodze: reverse proxy / gateway / backend
 
-W realnych systemach często masz więcej niż jedną warstwę:
+W realnych systemach często masz więcej niż jedną warstwę po drodze (np. reverse proxy, gateway, aplikacja).
+Nie każda z nich robi autoryzację - często to warstwa routingu / dostępu / ochrony, a nie AAA.
 
-- CDN / WAF,
-- reverse proxy,
-- gateway,
-- aplikacja.
+Ryzyko rośnie, gdy:
 
-To rodzi klasę błędów typu: **jedna warstwa filtruje inaczej niż druga**.
+- różne warstwy **inaczej interpretują** żądanie (routing/normalizacja),
+- a mechanizm egzekwowania dostępu jest niespójny albo oparty o różne “źródła prawdy”.
 
-Objawy:
+Objawy (przykładowe, zależne od stacku):
 
 - jedna ścieżka blokowana, a “prawie ta sama” przechodzi,
 - system toleruje inne metody HTTP,
 - routing dopasowuje ścieżkę inaczej (slash na końcu, wielkość liter, rozszerzenia).
+
+> To nie jest „broken auth sam w sobie”, tylko klasa problemów wynikająca z niespójnej architektury i egzekwowania reguł.
 
 ---
 
@@ -125,60 +146,59 @@ Objawy:
 
 ### Czym są te nagłówki
 
-`X-Original-URL` `X-Rewrite-URL` to **niestandardowe nagłówki HTTP**, które w niektórych architekturach służą do przekazywania “oryginalnej” lub “przepisanej” ścieżki żądania między warstwami.
-
-Spotkasz je m.in. w środowiskach z reverse proxy / gateway / IIS / niektórymi frameworkami i middleware, gdzie:
-
-- proxy przyjmuje żądanie na jednej ścieżce,
-- a wewnętrznie mapuje je na inną,
-- albo przekazuje backendowi informację: “tak naprawdę użytkownik chciał wejść na /X”.
+`X-Original-URL` `X-Rewrite-URL` to **niestandardowe nagłówki HTTP**, które w niektórych architekturach
+służą do przekazywania “oryginalnej” lub “przepisanej” ścieżki żądania między warstwami.
 
 ### Dlaczego są ważne
 
-Bo jeśli backend **ufa** tym nagłówkom, a filtr/ACL działa na czymś innym (np. na request line), to możesz mieć sytuację:
+Problem pojawia się wtedy, gdy którakolwiek warstwa zaczyna podejmować decyzje o dostępie/routingu
+na podstawie tych nagłówków, a klient może je dostarczyć albo nadpisać.
 
-- **warstwa zewnętrzna** myśli, że idziesz na `/`
-- **backend** widzi w nagłówku, że “oryginalny URL” to `/admin/deleteUser`
-
-To jest klasyczny problem **rozjazdu interpretacji (discrepancy)** między warstwami.
+W skrócie: **nie powinno się budować autoryzacji o takie nagłówki**.
+Jeżeli są używane, to powinny być kontrolowane wyłącznie przez zaufane komponenty (edge/proxy),
+a nie przez użytkownika.
 
 ### Co można nimi “namieszać” (realistyczne scenariusze)
 
 1. **Ominięcie kontroli dostępu opartej o URL**
-   - Proxy blokuje `/admin/*` ale backend przyjmuje `/` i interpretuje nagłówek jako ścieżkę docelową.
-   - Efekt: request przechodzi do funkcji, która normalnie byłaby odcięta.
+   - Jedna warstwa filtruje po request line, a backend kieruje logikę po nagłówku.
+   - Efekt: niespójność źródła prawdy może umożliwić dotarcie do chronionych funkcji.
 
-2. **Dotarcie do endpointów, które “niby nie istnieją” z zewnątrz**
-   - Z zewnątrz widać tylko kilka ścieżek, reszta jest “wewnętrzna”.
-   - Jeśli nagłówek pozwala wskazać wewnętrzny routing, da się go niechcący wystawić.
+2. **Dotarcie do endpointów “wewnętrznych”**
+   - Z zewnątrz widać tylko część tras, reszta jest routowana wewnętrznie.
+   - Jeżeli nagłówek wpływa na routing, można niechcący wystawić endpointy.
 
-3. **Bypass reguł WAF / rate limiting / logging**
-   - Jedna warstwa loguje i filtruje po request line,
+3. **Bypass reguł filtrowania/logowania**
+   - Jedna warstwa loguje/filtruje po request line,
    - druga wykonuje akcję po nagłówku,
-   - co utrudnia detekcję i korelację zdarzeń (“w logach wygląda jak request do /”).
+   - przez co korelacja w logach bywa trudniejsza.
 
 ### Najważniejszy wniosek
 
-Te nagłówki są “mechaniką infrastruktury”, ale bezpieczeństwo psuje się wtedy, gdy:
+Ryzyko jest architektoniczne: psuje się wtedy, gdy:
 
-- **różne warstwy podejmują decyzje na podstawie różnych źródeł prawdy** (URL vs header),
-- a przynajmniej jedna z nich nie jest konsekwentna.
+- różne warstwy podejmują decyzje na podstawie różnych źródeł prawdy,
+- a przynajmniej jedna z nich dopuszcza wpływ klienta na te „wewnętrzne” metadane.
 
 ---
 
 ## Jak temu zapobiegać (bez lania wody)
 
-- **Deny by default**: jeśli zasób nie jest publiczny, domyślnie blokuj.
-- **Jeden mechanizm AuthZ** (serwerowy) dla całej aplikacji, nie “tu if, tam if”.
-- **Nie ufaj danym kontrolowanym przez klienta** (cookie/param/JS) do podejmowania decyzji o roli.
-- **Spójny routing i spójne reguły** na wszystkich warstwach (proxy/gateway/app).
-- **Testy regresyjne dla AuthZ**: role, zasoby, metody, edge-case w ścieżkach.
+- **Centralny mechanizm uwierzytelniania i autoryzacji** (spójne miejsce decyzji i egzekwowania).
+- **Nie ufaj danym kontrolowanym przez klienta** (cookie/param/JS) do podejmowania decyzji o roli/uprawnieniach.
+- **Weryfikuj relację użytkownik → obiekt** (własność/tenant), nie tylko „czy user jest zalogowany”.
+- **Spójne reguły routingu/normalizacji** między warstwami (żeby nie było rozjazdów interpretacji).
+- **Testy regresyjne autoryzacji**: role, zasoby, metody, edge-case’y w ścieżkach i stanach procesu.
+
+> „Deny by default” jest sensowne szczególnie dla danych i operacji wrażliwych, ale w praktyce zależy od krytyczności systemu i kontekstu (fail-closed vs fail-open).
 
 ---
 
 ## TL;DR (save-worthy)
 
-- Access control to _autoryzacja_, nie logowanie.
-- Najczęstsze wpadki: “ukryty link”, “dziwny URL”, “rola w cookie/param”, “IDOR”.
-- Wielowarstwowe architektury psują bezpieczeństwo, gdy warstwy interpretują URL inaczej.
-  `X-Original-URL` `X-Rewrite-URL` są groźne, jeśli backend im ufa, a filtracja jest gdzie indziej.
+- Kontrola dostępu to szerszy temat niż samo „czy możesz wykonać akcję” - myśl o AAA.
+- Najczęstszy realny błąd: **brak / niespójny enforcement** (ktoś nie sprawdził roli/uprawnień albo zrobił to źle).
+- „Ukryty link” i „dziwny URL” to nie zabezpieczenia - to sygnały, że serwer może nie egzekwować reguł.
+- IDOR to często **rezultat** braku weryfikacji relacji użytkownik → obiekt.
+- Nagłówki `X-Original-URL` / `X-Rewrite-URL` są problemem, gdy architektura pozwala im wpływać na routing/autoryzację
+  albo gdy różne warstwy mają różne źródła prawdy.

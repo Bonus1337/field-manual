@@ -1,6 +1,6 @@
 ---
 id: access-control-priv-esc
-title: "Access Control & Privilege Escalation"
+title: "Access control & privilege escalation"
 team: red
 category: portswigger academy
 tags: ["access-control", "idor", "privilege-escalation", "authz", "misconfiguration"]
@@ -8,57 +8,71 @@ difficulty: medium
 updatedAt: "2026-02-16"
 ---
 
-Access control is not “do you have an account?” - it’s **whether the application is allowed to perform a specific action for a specific identity**.
+Access control is a set of mechanisms that decide **who** can access **which resources** and perform **which actions** - and (in mature systems) make this auditable and accountable.
 
-In real-world web security, access control failures are high impact because they commonly lead to:
+A practical way to think about it is **AAA**:
+
+- **Authentication**: proving identity (who you are).
+- **Authorization**: enforcing permissions (what this identity can do / see).
+- **Accountability / Accounting**: an activity trail (who did what, when; logs/audit).
+
+Access control issues are a common source of web incidents, but the impact varies - from minor data leaks to critical privilege escalation. It depends on **what data/actions** sit behind a given endpoint.
+
+Typical consequences (when the bug affects sensitive functionality) include:
 
 - viewing other users’ data,
-- account takeover paths,
-- admin-only actions being reachable,
-- role/permission changes,
-- destructive actions (delete/modify resources).
+- performing actions on other users’ resources,
+- higher-privileged operations (e.g., admin actions),
+- changing roles / permissions,
+- deleting resources.
 
 ---
 
-## How it fits together: AuthN vs Session vs AuthZ
+## How it fits together: authentication vs session vs authorization
 
-- **Authentication (AuthN)**: who you are (login).
-- **Session management**: continuity (cookies/tokens across requests).
-- **Authorization (AuthZ / access control)**: what you are allowed to do or access.
+- **Authentication**: who you are (login).
+- **Session management**: whether it’s still you (cookie/token, request continuity, expiry).
+- **Authorization (access control)**: what this identity is allowed to do / see.
 
-Most access control bugs happen when the app:
+Access control failures don’t always come from “trusting client data” or “hiding things in the UI”.
+In real systems, they usually happen because of:
 
-- trusts user-controlled input (params/cookies/client-side logic),
-- or assumes “if it’s not in the UI, nobody can reach it”.
+- **missing enforcement** somewhere (someone forgot to check role/permission),
+- or a **bug in the authorization logic** (wrong condition, inconsistent rules, different resource interpretation).
 
 ---
 
-## Three access control patterns you’ll meet in practice
+## Three access control types you’ll see in the real world
 
 ### 1) Vertical (role → functions)
 
-Different roles access different capabilities.
-Examples: admin panel, user management, role assignment.
+Different roles have access to different features.
+Examples: admin panel, user management, role changes.
 
-**Common failure:** the feature exists server-side, but the restriction is only “cosmetic” (hidden UI link).
+**Typical bug:** an endpoint works for “any logged-in user” (session check exists),
+but the **role/permission check is missing** (or inconsistent).
 
 ---
 
-### 2) Horizontal (user → owned resources)
+### 2) Horizontal (user → their resources)
 
-Users should only access their own resources (profile, orders, documents).
-Examples: ` myaccount?id=...` `orders?user=...` file downloads by ID.
+Each user should only access “their” slice of resources (account, documents, orders).
+Examples: `myaccount?id=...`, `orders?user=...`, downloading files by ID.
 
-**Common failure:** the app accepts an object identifier and forgets to enforce ownership checks (IDOR).
+**Typical (classic) bug pattern:** the app lets you reference an object using an identifier
+provided by the user and **does not verify the relationship** (owner/tenant).
+
+This often results in an IDOR as the observable outcome.
 
 ---
 
 ### 3) Context-dependent (process state → access)
 
-Access depends on the current state of a workflow.
-Examples: cart edits after payment, multi-step role changes, “confirm” flows.
+Access depends on which stage of a process you’re in.
+Examples: checkout after payment, changing data after confirmation, workflows like “step 1 → step 2 → confirm”.
 
-**Common failure:** controls exist on some steps, but one step is callable directly (step skipping).
+**Typical bug:** checks exist on some steps, but one step can be invoked “out of order”
+(or the state condition is not enforced server-side).
 
 ---
 
@@ -66,59 +80,66 @@ Examples: cart edits after payment, multi-step role changes, “confirm” flows
 
 ### UI ≠ access control
 
-Not showing an option in the menu is not a security control.  
-**Backend must enforce authorization**, always.
+Just because something isn’t visible in the menu doesn’t mean the backend won’t serve it.
+**Hiding a link** is not a security control - it’s just UX.
+
+> In practice this shares the same core problem as “security by obscurity”: missing server-side enforcement.
 
 ---
 
 ### “Security by obscurity”
 
-Hiding functionality behind a random-looking URL does not equal protection.
-Those URLs often leak via JavaScript, HTML source, or client-side role logic.
+Sometimes features are hidden behind a “weird” path (a random-looking URL fragment).
+The issue: that path often leaks anyway (JS, HTML, UI logic).
 
 ---
 
-### Client-controlled roles (params/cookies/hidden fields)
+### Client-controlled permissions (params/cookies/hidden fields)
 
-If the app decides “admin or not” based on a value the client can change:
+If the app decides “are you admin” based on a value the user can modify:
 
-- cookies like `Admin=false`
-- parameters like `role=1`
-- hidden fields like `isAdmin=0`
-  then it’s not authorization - it’s a trust flaw.
+- a cookie like `Admin=false`
+- a parameter like `role=1`
+- a hidden field like `isAdmin=0`
+
+the real problem isn’t “the parameter exists”, but that the **server trusts client-controlled input**
+for an authorization decision.
 
 ---
 
-## IDOR in the real world (the most common access control pattern)
+## IDOR in practice (a very common data exposure pattern)
 
-**IDOR (Insecure Direct Object Reference)** happens when user-supplied input selects an object directly, without enforcing proper authorization.
+**IDOR (Insecure Direct Object Reference)** = a situation where a user can reference an object
+using an identifier they provide, and the application fails to properly enforce access checks for that object.
 
 Common forms:
 
 - numeric IDs (easy to guess),
-- GUID/UUID (harder to guess, but often **leak in the UI**: profiles, posts, comments, links).
+- GUIDs/UUIDs (harder to guess, but often **leak through the UI**: profiles, posts, comments, links).
 
-**Sneaky variant:** the server returns a redirect, but the response body still contains sensitive data.  
-Don’t trust “it redirected” - always inspect the response body.
+**A sneaky edge-case:** the response redirects, but **the response body still contains data**.
+This often comes from an implementation mistake (e.g., not stopping execution after redirect),
+and the observable outcome can look like an “IDOR-style” leak.
 
 ---
 
-## Multiple layers: frontend, reverse proxy, backend
+## Layers in between: reverse proxy / gateway / backend
 
-Modern stacks often include:
+Real systems often have more than one layer in front of the app (reverse proxy, gateway, application).
+Not every layer performs authorization - often it’s routing / access / protection, not AAA.
 
-- CDN/WAF,
-- reverse proxy,
-- gateway,
-- application.
+Risk increases when:
 
-This creates a class of issues where **different layers interpret the same request differently**.
+- different layers **interpret** a request differently (routing/normalization),
+- and enforcement becomes inconsistent or depends on different “sources of truth”.
 
-Symptoms:
+Symptoms (examples, stack-dependent):
 
-- one path is blocked, a near-identical variant works,
-- method handling differs (POST vs GET),
-- routing mismatches (trailing slash, case, extensions).
+- one path is blocked, but an “almost identical” path gets through,
+- the system tolerates different HTTP methods,
+- routing matches paths differently (trailing slash, case sensitivity, extensions).
+
+> This isn’t “broken auth by itself” - it’s a class of problems caused by inconsistent architecture and rule enforcement.
 
 ---
 
@@ -126,58 +147,59 @@ Symptoms:
 
 ### What these headers are
 
-`X-Original-URL` and `X-Rewrite-URL` are **non-standard HTTP headers** used in some proxy/gateway setups to pass the “original” or “rewritten” request path between layers.
+`X-Original-URL` and `X-Rewrite-URL` are **non-standard HTTP headers** that, in some architectures,
+are used to pass the “original” or “rewritten” request path between layers.
 
-In certain architectures:
+### Why they matter
 
-- the proxy accepts a request at one path,
-- internally maps it to another,
-- and forwards metadata to the backend about what the “real” target path should be.
+The problem appears when any layer starts making access/routing decisions based on these headers
+and the client can supply or override them.
 
-### Why they’re important
+In short: **you should not build authorization on top of these headers**.
+If they are used, they should be controlled only by trusted components (edge/proxy),
+not by the user.
 
-If the backend **trusts** these headers while access control is enforced elsewhere (or enforced on the request line only), you can get a **source-of-truth mismatch**:
+### What can go wrong (realistic scenarios)
 
-- the outer layer thinks the request is for `/`
-- the backend reads the header as “actually” `/admin/deleteUser`
+1. **Bypassing URL-based access control**
+   - One layer filters by the request line, while the backend routes logic using the header.
+   - Result: a “source of truth mismatch” can allow access to protected functionality.
 
-That discrepancy can become an authorization bypass.
+2. **Reaching “internal” endpoints**
+   - Externally you see only a subset of routes; the rest is internal routing.
+   - If the header influences routing, internal endpoints can be exposed unintentionally.
 
-### What can go wrong (realistic outcomes)
+3. **Bypassing filtering/logging rules**
+   - One layer logs/filters by the request line,
+   - another executes actions based on the header,
+   - making detection/correlation harder.
 
-1. **Bypassing URL-based access controls**
-   - Frontend blocks `/admin/*` but backend processes `/` and routes using the header.
+### The key takeaway
 
-2. **Reaching internal-only endpoints**
-   - Endpoints intended to be accessible only behind a gateway can become reachable.
+This is an architectural risk: it breaks when:
 
-3. **Dodging WAF/rate limiting/logging assumptions**
-   - One layer logs/filters based on the visible URL,
-   - another performs the sensitive action based on the header,
-   - making detection and correlation harder (“logs show") `/`
-
-### Key takeaway
-
-These headers are infrastructure mechanics - but security breaks when:
-
-- **different layers make authorization decisions using different inputs** (URL vs header),
-- and at least one of them is inconsistent or overly trusting.
+- different layers make decisions based on different sources of truth,
+- and at least one layer lets the client influence these “internal” metadata fields.
 
 ---
 
-## Prevention that actually works
+## How to prevent it (no fluff)
 
-- **Deny by default**: everything private unless explicitly public.
-- **Single, server-side AuthZ mechanism**: consistent enforcement everywhere.
-- **Never trust client-controlled role signals** (params/cookies/JS) for authorization.
-- **Align routing and controls across layers** (proxy/gateway/app).
-- **Audit & regression test authorization**: roles, resources, methods, path edge-cases.
+- **Central authentication + authorization mechanism** (one place for decisions + consistent enforcement).
+- **Don’t trust client-controlled data** (cookie/params/JS) for role/permission decisions.
+- **Validate user → object relationships** (ownership/tenant), not just “is the user logged in”.
+- **Consistent routing/normalization rules** across layers (avoid interpretation drift).
+- **Authorization regression tests**: roles, resources, methods, edge-cases in paths and process states.
+
+> “Deny by default” is sensible especially for sensitive data and actions, but in practice depends on system criticality and context (fail-closed vs fail-open).
 
 ---
 
 ## TL;DR (save-worthy)
 
-- Access control is authorization - not login.
-- Common failures: hidden links, obscured URLs, role-in-cookie/param, IDOR.
-- Multi-layer stacks fail when layers interpret routing differently.
-  `X-Original-URL` `X-Rewrite-URL` become dangerous when the backend trusts them but controls exist elsewhere.
+- Access control is broader than “can you perform this action” - think AAA.
+- The most common real-world bug: **missing / inconsistent enforcement** (someone forgot to check role/permission or implemented it incorrectly).
+- “Hidden link” and “weird URL” are not protections - they’re signals the server may not enforce rules.
+- IDOR is often the **result** of missing user → object relationship checks.
+- `X-Original-URL` / `X-Rewrite-URL` become dangerous when architecture lets them influence routing/authorization,
+  or when different layers rely on different sources of truth.
