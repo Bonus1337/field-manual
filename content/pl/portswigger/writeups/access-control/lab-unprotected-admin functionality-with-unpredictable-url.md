@@ -1,6 +1,6 @@
 ---
 id: ps-writeup-ac-unprotected-admin-unpredictable-url
-title: "Lab Write-up: Unprotected admin functionality with unpredictable URL"
+title: "Unprotected admin functionality with unpredictable URL"
 team: red
 category: portswigger writeups
 chapter: access-control

@@ -1,6 +1,6 @@
 ---
 id: ps-writeup-ac-unprotected-admin
-title: "Lab Write-up: Unprotected admin functionality"
+title: "Unprotected admin functionality"
 team: red
 category: portswigger writeups
 chapter: access-control
