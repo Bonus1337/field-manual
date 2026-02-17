@@ -44,22 +44,22 @@ export function buildToc(markdown = "", { minLevel = 2, maxLevel = 3 } = {}) {
     }
     if (inFence) continue;
 
-    const hMatch = line.match(/^(#{2,6})\s+(.+?)\s*$/);
+    const hMatch = line.match(/^(#{1,6})\s+(.+?)\s*$/);
     if (!hMatch) continue;
 
     const level = hMatch[1].length;
-    if (level < minLevel || level > maxLevel) continue;
-
     const rawText = hMatch[2].trim();
+
     const { text, id: explicitId } = extractExplicitId(rawText);
 
     let id = explicitId ?? slugify(text);
-
     if (!id) continue;
 
     const prev = used.get(id) ?? 0;
     used.set(id, prev + 1);
     if (prev > 0) id = `${id}-${prev + 1}`;
+
+    if (level < minLevel || level > maxLevel) continue;
 
     toc.push({ text, id, level });
   }
