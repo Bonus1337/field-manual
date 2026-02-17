@@ -443,7 +443,7 @@ export default function SecurityGuidebook() {
           };
         }
 
-        const topicRaw = (d.category || "misc").trim();
+        const topicRaw = (d.chapter || d.nav?.topic || d.category || "misc").trim();
         const topicSlug = normalizeTopic(topicRaw);
         const topicKey = `${secKey}::topic::${topicSlug}`;
 
