@@ -154,6 +154,32 @@ function normalizeTopic(v) {
 const PINNED_ORDER = ["manifesto", "about"];
 const PINNED_SET = new Set(PINNED_ORDER);
 
+function useIsDesktop() {
+  const QUERY = "(min-width: 1024px)";
+
+  const getSnapshot = () => {
+    if (typeof globalThis === "undefined" || !globalThis.matchMedia) return true;
+    return globalThis.matchMedia(QUERY).matches;
+  };
+
+  const getServerSnapshot = () => true;
+
+  const subscribe = (onStoreChange) => {
+    const mql = globalThis.matchMedia(QUERY);
+    const handler = () => onStoreChange();
+
+    if (mql.addEventListener) mql.addEventListener("change", handler);
+    else mql.addListener(handler);
+
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener("change", handler);
+      else mql.removeListener(handler);
+    };
+  };
+
+  return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 function CodeBlock({ code, language }) {
   const [copied, setCopied] = useState(false);
 
@@ -219,6 +245,7 @@ function Markdown({ content }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [lightbox.open]);
+
   useEffect(() => {
     usedIdsRef.current = new Map();
   }, [content]);
@@ -321,6 +348,7 @@ function Markdown({ content }) {
       >
         {content}
       </ReactMarkdown>
+
       {lightbox.open && (
         <div
           className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm"
@@ -374,7 +402,13 @@ export default function SecurityGuidebook() {
   const safeLang = lang === "en" ? "en" : "pl";
   const t = UI[safeLang];
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isDesktop = useIsDesktop();
+
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  });
+
   const [query, setQuery] = useState("");
   const [theme, setTheme] = useState(() => getStoredTheme());
 
@@ -388,6 +422,19 @@ export default function SecurityGuidebook() {
     setStoredTheme(theme);
   }, [theme]);
 
+  const sidebarOpenEffective = isDesktop ? true : sidebarOpen;
+
+  useEffect(() => {
+    if (isDesktop) return;
+
+    const prev = document.body.style.overflow;
+    if (sidebarOpenEffective) document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [sidebarOpenEffective, isDesktop]);
+
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
@@ -400,11 +447,12 @@ export default function SecurityGuidebook() {
       if (e.key === "Escape") {
         const el = document.getElementById("kb-search");
         if (el && document.activeElement === el) el.blur();
+        if (!isDesktop && sidebarOpenEffective) setSidebarOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [isDesktop, sidebarOpen]);
 
   const { map, canon } = useMemo(() => loadContentBilingual(), []);
 
@@ -685,12 +733,14 @@ export default function SecurityGuidebook() {
   const onSwitchLang = () => {
     const next = safeLang === "pl" ? "en" : "pl";
     navigate(`/${next}/doc/${id}`, { replace: false });
+    if (!isDesktop) setSidebarOpen(false);
   };
 
   const onGoDoc = (docId2) => {
     navigate(`/${safeLang}/doc/${docId2}`);
     const root = mainRef.current;
     if (root) root.scrollTo({ top: 0, behavior: "auto" });
+    if (!isDesktop) setSidebarOpen(false);
   };
 
   const toggleSection = (secKey) => {
@@ -830,27 +880,40 @@ export default function SecurityGuidebook() {
   }
 
   return (
-    <div className="h-screen w-full bg-white text-slate-900 dark:bg-[#0b0f17] dark:text-slate-100">
-      <div className="flex h-full">
+    <div className="h-dvh w-full bg-white text-slate-900 dark:bg-[#0b0f17] dark:text-slate-100">
+      <div className="relative flex h-full">
+        {!isDesktop && sidebarOpenEffective && (
+          <button
+            type="button"
+            aria-label="Close sidebar overlay"
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+          />
+        )}
+
         <aside
           className={cx(
-            "border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0a0e16]",
-            sidebarOpen ? "w-80" : "w-0"
+            "fixed inset-y-0 left-0 z-40 w-80 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0a0e16]",
+            "transform transition-transform duration-200 ease-out will-change-transform",
+            sidebarOpenEffective ? "translate-x-0" : "-translate-x-full",
+            "lg:static lg:translate-x-0 lg:z-auto lg:shrink-0"
           )}
         >
-          <div className={cx("h-full", sidebarOpen ? "flex flex-col" : "hidden")}>
+          <div className="h-full flex flex-col">
             <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-900 flex items-center justify-between">
               <button
                 onClick={() => onGoDoc("manifesto")}
-                className="flex items-center gap-2 text-left"
+                className="flex items-center gap-2 text-left min-w-0"
                 type="button"
               >
                 <div className="h-9 w-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center dark:border-slate-800 dark:bg-slate-900">
                   <BookOpen size={18} className="text-slate-700 dark:text-slate-200" />
                 </div>
-                <div>
-                  <div className="text-sm font-semibold leading-tight">{SITE.name}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold leading-tight truncate">
+                    {SITE.name}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
                     by {SITE.authorLabel}
                   </div>
                 </div>
@@ -860,6 +923,7 @@ export default function SecurityGuidebook() {
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden rounded-md p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900"
                 type="button"
+                aria-label="Close menu"
               >
                 <X size={18} />
               </button>
@@ -1253,40 +1317,43 @@ export default function SecurityGuidebook() {
         </aside>
 
         <main ref={mainRef} className="flex-1 relative h-full overflow-y-auto min-w-0">
-          {!sidebarOpen && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="absolute left-4 top-4 z-10 rounded-lg border border-slate-200 bg-white/80 p-2 text-slate-700 backdrop-blur hover:bg-white dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-200"
-              type="button"
-            >
-              <Menu size={18} />
-            </button>
-          )}
+          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0a0e16]">
+            <div className="mx-auto max-w-6xl px-4 sm:px-8 py-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {!isDesktop && (
+                  <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="rounded-lg border border-slate-200 bg-white/80 p-2 text-slate-700 backdrop-blur hover:bg-white dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-200"
+                    type="button"
+                    aria-label="Open menu"
+                  >
+                    <Menu size={18} />
+                  </button>
+                )}
 
-          <header className="sticky top-0 z-10 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0a0e16]">
-            <div className="mx-auto max-w-6xl px-4 sm:px-8 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
                 <div className={cx("rounded-xl border px-2.5 py-1 text-xs", meta.chip)}>
                   <span className="inline-flex items-center gap-2">
                     <meta.Icon size={14} />
                     {meta.label}
                   </span>
                 </div>
-                <div className="text-sm font-semibold">{doc.title}</div>
+
+                <div className="text-sm font-semibold truncate">{doc.title}</div>
               </div>
 
               <a
                 href={editUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900 shrink-0"
               >
-                {t.edit} <ExternalLink size={12} />
+                <span className="hidden sm:inline">{t.edit}</span>
+                <ExternalLink size={12} />
               </a>
             </div>
           </header>
 
-          <div className="mx-auto max-w-6xl px-4 sm:px-8 py-10 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-10">
+          <div className="mx-auto max-w-6xl px-4 sm:px-8 py-6 sm:py-10 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8 lg:gap-10">
             <article ref={articleRef} className="min-w-0">
               {isFallback && (
                 <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
