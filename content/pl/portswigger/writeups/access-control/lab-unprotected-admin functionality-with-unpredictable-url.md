@@ -9,8 +9,6 @@ difficulty: apprentice
 updatedAt: "2026-02-17"
 ---
 
----
-
 # Lab Write-up: Unprotected admin functionality with unpredictable URL
 
 ## Cel
