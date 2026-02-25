@@ -5,7 +5,7 @@ team: blue
 category: email security
 tags: ["phishing", "email-analysis", "social-engineering", "triage", "email-security"]
 difficulty: easy
-updatedAt: "2026-02-23"
+updatedAt: "2026-02-22"
 ---
 
 # Phishing Email Analysis Guidelines
