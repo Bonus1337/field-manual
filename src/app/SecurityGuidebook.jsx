@@ -106,6 +106,20 @@ function titleize(s = "") {
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+function parseSortableDate(v) {
+  if (!v) return 0;
+  const t = Date.parse(String(v));
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function sortDocsByDateAscThenTitle(a, b) {
+  const da = parseSortableDate(a?.updatedAt);
+  const db = parseSortableDate(b?.updatedAt);
+
+  if (da !== db) return da - db;
+
+  return String(a?.title || "").localeCompare(String(b?.title || ""));
+}
 
 const DIFF_ORDER = {
   portswigger: ["apprentice", "practitioner", "expert"],
@@ -647,14 +661,14 @@ export default function SecurityGuidebook() {
       subsArr.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
       for (const sub of subsArr) {
         if (sub.kind === "docs") {
-          sub.items.sort((a, b) => a.title.localeCompare(b.title));
+          sub.items.sort(sortDocsByDateAscThenTitle);
         }
       }
       sec.subsArr = subsArr;
 
       const groupsArr = Array.from(sec.groups.values());
       groupsArr.sort((a, b) => sortByDifficulty(sec.platform, a.raw, b.raw));
-      for (const g of groupsArr) g.items.sort((a, b) => a.title.localeCompare(b.title));
+      for (const g of groupsArr) g.items.sort(sortDocsByDateAscThenTitle);
       sec.groupsArr = groupsArr;
 
       if (sec.writeups?.topics) {
@@ -664,8 +678,7 @@ export default function SecurityGuidebook() {
         for (const topic of topicsArr) {
           const diffsArr = Array.from(topic.diffs.values());
           diffsArr.sort((a, b) => sortByDifficulty("portswigger", a.raw, b.raw));
-          for (const g of diffsArr)
-            g.items.sort((a, b) => a.title.localeCompare(b.title));
+          for (const g of diffsArr) g.items.sort(sortDocsByDateAscThenTitle);
           topic.diffsArr = diffsArr;
         }
 
@@ -721,15 +734,19 @@ export default function SecurityGuidebook() {
     activePath?.parentKey,
     activePath?.groupKey,
   ]);
-
+  const canonSortedByDate = useMemo(() => {
+    return [...canon].sort(sortDocsByDateAscThenTitle);
+  }, [canon]);
   const docIndex = useMemo(
-    () => canon.findIndex((d) => d.id === (doc?.id ?? "")),
-    [canon, doc]
+    () => canonSortedByDate.findIndex((d) => d.id === (doc?.id ?? "")),
+    [canonSortedByDate, doc]
   );
-  const prevDoc = docIndex > 0 ? canon[docIndex - 1] : null;
-  const nextDoc =
-    docIndex >= 0 && docIndex < canon.length - 1 ? canon[docIndex + 1] : null;
 
+  const prevDoc = docIndex > 0 ? canonSortedByDate[docIndex - 1] : null;
+  const nextDoc =
+    docIndex >= 0 && docIndex < canonSortedByDate.length - 1
+      ? canonSortedByDate[docIndex + 1]
+      : null;
   const onSwitchLang = () => {
     const next = safeLang === "pl" ? "en" : "pl";
     navigate(`/${next}/doc/${id}`, { replace: false });
