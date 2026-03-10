@@ -19,9 +19,11 @@ import {
   Shield,
   Crosshair,
   Hash,
+  Download,
 } from "lucide-react";
 import { buildToc, slugify } from "./toc.js";
 import { loadContentBilingual } from "./contentLoader.js";
+import { exportAsPDF, exportAsMD } from "./utils/exportDoc.js";
 
 const SITE = {
   name: "Red/Blue Field Manual",
@@ -115,9 +117,7 @@ function parseSortableDate(v) {
 function sortDocsByDateAscThenTitle(a, b) {
   const da = parseSortableDate(a?.updatedAt);
   const db = parseSortableDate(b?.updatedAt);
-
   if (da !== db) return da - db;
-
   return String(a?.title || "").localeCompare(String(b?.title || ""));
 }
 
@@ -149,10 +149,8 @@ function sortByDifficulty(platform, a, b) {
   const order = DIFF_ORDER[platform] || [];
   const ia = order.indexOf(normalizeDifficulty(a));
   const ib = order.indexOf(normalizeDifficulty(b));
-
   const va = ia === -1 ? 999 : ia;
   const vb = ib === -1 ? 999 : ib;
-
   if (va !== vb) return va - vb;
   return String(a || "").localeCompare(String(b || ""));
 }
@@ -170,33 +168,26 @@ const PINNED_SET = new Set(PINNED_ORDER);
 
 function useIsDesktop() {
   const QUERY = "(min-width: 1024px)";
-
   const getSnapshot = () => {
     if (typeof globalThis === "undefined" || !globalThis.matchMedia) return true;
     return globalThis.matchMedia(QUERY).matches;
   };
-
   const getServerSnapshot = () => true;
-
   const subscribe = (onStoreChange) => {
     const mql = globalThis.matchMedia(QUERY);
     const handler = () => onStoreChange();
-
     if (mql.addEventListener) mql.addEventListener("change", handler);
     else mql.addListener(handler);
-
     return () => {
       if (mql.removeEventListener) mql.removeEventListener("change", handler);
       else mql.removeListener(handler);
     };
   };
-
   return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 function CodeBlock({ code, language }) {
   const [copied, setCopied] = useState(false);
-
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(String(code || "").trim());
@@ -206,7 +197,6 @@ function CodeBlock({ code, language }) {
       console.warn("Clipboard copy failed", e);
     }
   };
-
   return (
     <div className="my-5 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
       <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-800">
@@ -223,7 +213,6 @@ function CodeBlock({ code, language }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-
       <pre className="overflow-x-auto p-4 text-sm leading-relaxed">
         <code className="font-mono text-slate-900 dark:text-slate-100">
           {String(code || "").trim()}
@@ -234,13 +223,20 @@ function CodeBlock({ code, language }) {
 }
 
 function Markdown({ content }) {
-  const usedIdsRef = useRef(new Map());
+  const usedIds = new Map();
 
-  const [lightbox, setLightbox] = useState({
-    open: false,
-    src: "",
-    alt: "",
-  });
+  const computeHeading = (children) => {
+    const text = nodeToText(children).trim();
+    const m = text.match(/\s*\{#([a-z0-9\-_]+)\}\s*$/i);
+    const visibleText = m ? text.replace(m[0], "").trim() : text;
+    const baseId = m ? m[1] : slugify(visibleText);
+    const prev = usedIds.get(baseId) ?? 0;
+    usedIds.set(baseId, prev + 1);
+    const id = prev > 0 ? `${baseId}-${prev + 1}` : baseId;
+    return { id, visibleText, hasExplicit: Boolean(m) };
+  };
+
+  const [lightbox, setLightbox] = useState({ open: false, src: "", alt: "" });
 
   useEffect(() => {
     if (!lightbox.open) return;
@@ -260,26 +256,6 @@ function Markdown({ content }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [lightbox.open]);
 
-  useEffect(() => {
-    usedIdsRef.current = new Map();
-  }, [content]);
-
-  const computeHeading = (children) => {
-    const text = nodeToText(children).trim();
-
-    const m = text.match(/\s*\{#([a-z0-9\-_]+)\}\s*$/i);
-    const visibleText = m ? text.replace(m[0], "").trim() : text;
-    const baseId = m ? m[1] : slugify(visibleText);
-
-    const used = usedIdsRef.current;
-    const prev = used.get(baseId) ?? 0;
-    used.set(baseId, prev + 1);
-
-    const id = prev > 0 ? `${baseId}-${prev + 1}` : baseId;
-
-    return { id, visibleText, hasExplicit: Boolean(m) };
-  };
-
   return (
     <div className="prose prose-slate max-w-none dark:prose-invert prose-headings:scroll-mt-24">
       <ReactMarkdown
@@ -288,7 +264,6 @@ function Markdown({ content }) {
           pre({ children }) {
             return <>{children}</>;
           },
-
           h1({ children }) {
             const { id, visibleText, hasExplicit } = computeHeading(children);
             return <h1 id={id}>{hasExplicit ? visibleText : children}</h1>;
@@ -308,7 +283,6 @@ function Markdown({ content }) {
           img({ src, alt }) {
             const s = String(src || "");
             const a = String(alt || "");
-
             return (
               <button
                 type="button"
@@ -330,7 +304,6 @@ function Markdown({ content }) {
             const trimmed = raw.replace(/\n$/, "");
             const match = /language-([\w-]+)/.exec(className || "");
             const hasLang = Boolean(match?.[1]);
-
             if (inline) {
               return (
                 <code className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[0.95em] dark:bg-slate-900">
@@ -338,7 +311,6 @@ function Markdown({ content }) {
                 </code>
               );
             }
-
             const isSingleLine = !trimmed.includes("\n");
             if (!hasLang && isSingleLine && trimmed.trim().length <= 120) {
               return (
@@ -347,10 +319,8 @@ function Markdown({ content }) {
                 </code>
               );
             }
-
             return <CodeBlock code={raw} language={match?.[1]} />;
           },
-
           blockquote({ children }) {
             return (
               <blockquote className="border-l-4 border-amber-300 bg-amber-50/60 p-4 not-italic dark:border-amber-900/70 dark:bg-amber-950/20">
@@ -383,7 +353,6 @@ function Markdown({ content }) {
               >
                 <X size={16} />
               </button>
-
               <img
                 src={lightbox.src}
                 alt={lightbox.alt}
@@ -409,13 +378,14 @@ export default function SecurityGuidebook() {
 
   const mainRef = useRef(null);
   const articleRef = useRef(null);
+  const exportRef = useRef(null);
 
   const [activeTocId, setActiveTocId] = useState(null);
   const [tocItems, setTocItems] = useState([]);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const safeLang = lang === "en" ? "en" : "pl";
   const t = UI[safeLang];
-
   const isDesktop = useIsDesktop();
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -425,7 +395,6 @@ export default function SecurityGuidebook() {
 
   const [query, setQuery] = useState("");
   const [theme, setTheme] = useState(() => getStoredTheme());
-
   const [openSections, setOpenSections] = useState(() => ({}));
   const [openGroups, setOpenGroups] = useState(() => ({}));
 
@@ -437,13 +406,10 @@ export default function SecurityGuidebook() {
   }, [theme]);
 
   const sidebarOpenEffective = isDesktop ? true : sidebarOpen;
-
   useEffect(() => {
     if (isDesktop) return;
-
     const prev = document.body.style.overflow;
     if (sidebarOpenEffective) document.body.style.overflow = "hidden";
-
     return () => {
       document.body.style.overflow = prev;
     };
@@ -462,11 +428,23 @@ export default function SecurityGuidebook() {
         const el = document.getElementById("kb-search");
         if (el && document.activeElement === el) el.blur();
         if (!isDesktop && sidebarOpenEffective) setSidebarOpen(false);
+        setExportOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isDesktop, sidebarOpen]);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    const handler = (e) => {
+      if (exportRef.current && !exportRef.current.contains(e.target)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [exportOpen]);
 
   const { map, canon } = useMemo(() => loadContentBilingual(), []);
 
@@ -498,7 +476,6 @@ export default function SecurityGuidebook() {
       }),
     [sidebarItems]
   );
-
   const filtered = useMemo(() => {
     if (!query.trim()) return sidebarItems;
     return fuse.search(query).map((r) => r.item);
@@ -546,7 +523,6 @@ export default function SecurityGuidebook() {
       }
 
       const nav = d.nav || null;
-
       const isPortSwigger = nav?.root === "portswigger";
       const isTryHackMe = nav?.root === "tryhackme";
       const isWriteup = Boolean(nav?.isWriteup);
@@ -573,15 +549,9 @@ export default function SecurityGuidebook() {
 
       if (isPortSwigger && isWriteup) {
         sec.platform = "portswigger";
-
         const sub = ensureSub(sec, "Writeups");
         sub.kind = "portswigger-writeups";
-
-        if (!sec.writeups) {
-          sec.writeups = {
-            topics: new Map(),
-          };
-        }
+        if (!sec.writeups) sec.writeups = { topics: new Map() };
 
         const topicRaw = (d.chapter || d.nav?.topic || d.category || "misc").trim();
         const topicSlug = normalizeTopic(topicRaw);
@@ -594,12 +564,9 @@ export default function SecurityGuidebook() {
             diffs: new Map(),
           });
         }
-
         const topic = sec.writeups.topics.get(topicKey);
-
         const diffKey = normalizeDifficulty(d.difficulty);
         const diffGroupKey = `${topicKey}::diff::${diffKey}`;
-
         if (!topic.diffs.has(diffKey)) {
           topic.diffs.set(diffKey, {
             key: diffGroupKey,
@@ -608,27 +575,21 @@ export default function SecurityGuidebook() {
             items: [],
           });
         }
-
         topic.diffs.get(diffKey).items.push(d);
-
         sub.countOverride = (sub.countOverride ?? 0) + 1;
-
         path.set(d.id, {
           secKey,
           subKey: sub.key,
           parentKey: topicKey,
           groupKey: diffGroupKey,
         });
-
         continue;
       }
 
       if (isTryHackMe && isWriteup) {
         sec.platform = "tryhackme";
-
         const diffKey = normalizeDifficulty(d.difficulty);
         const groupKey = `${secKey}::diff::${diffKey}`;
-
         if (!sec.groups.has(diffKey)) {
           sec.groups.set(diffKey, {
             key: groupKey,
@@ -638,14 +599,12 @@ export default function SecurityGuidebook() {
           });
         }
         sec.groups.get(diffKey).items.push(d);
-
         path.set(d.id, { secKey, groupKey });
         continue;
       }
 
       const sub = ensureSub(sec, subLabel);
       sub.items.push(d);
-
       path.set(d.id, { secKey, groupKey: sub.key });
     }
 
@@ -660,9 +619,7 @@ export default function SecurityGuidebook() {
       const subsArr = Array.from(sec.subs.values());
       subsArr.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
       for (const sub of subsArr) {
-        if (sub.kind === "docs") {
-          sub.items.sort(sortDocsByDateAscThenTitle);
-        }
+        if (sub.kind === "docs") sub.items.sort(sortDocsByDateAscThenTitle);
       }
       sec.subsArr = subsArr;
 
@@ -674,14 +631,12 @@ export default function SecurityGuidebook() {
       if (sec.writeups?.topics) {
         const topicsArr = Array.from(sec.writeups.topics.values());
         topicsArr.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
-
         for (const topic of topicsArr) {
           const diffsArr = Array.from(topic.diffs.values());
           diffsArr.sort((a, b) => sortByDifficulty("portswigger", a.raw, b.raw));
           for (const g of diffsArr) g.items.sort(sortDocsByDateAscThenTitle);
           topic.diffsArr = diffsArr;
         }
-
         sec.writeups.topicsArr = topicsArr;
       }
     }
@@ -700,33 +655,27 @@ export default function SecurityGuidebook() {
 
   useEffect(() => {
     if (!activePath?.secKey) return;
-
     const raf = requestAnimationFrame(() => {
       setOpenSections((prev) => {
         if (prev[activePath.secKey] !== undefined) return prev;
         return { ...prev, [activePath.secKey]: true };
       });
-
       setOpenGroups((prev) => {
         let next = prev;
-
         const want = [
           activePath.subKey,
           activePath.parentKey,
           activePath.groupKey,
         ].filter(Boolean);
-
         for (const k of want) {
           if (next[k] === undefined) {
             next = next === prev ? { ...prev } : next;
             next[k] = true;
           }
         }
-
         return next;
       });
     });
-
     return () => cancelAnimationFrame(raf);
   }, [
     activePath?.secKey,
@@ -734,14 +683,14 @@ export default function SecurityGuidebook() {
     activePath?.parentKey,
     activePath?.groupKey,
   ]);
-  const canonSortedByDate = useMemo(() => {
-    return [...canon].sort(sortDocsByDateAscThenTitle);
-  }, [canon]);
+  const canonSortedByDate = useMemo(
+    () => [...canon].sort(sortDocsByDateAscThenTitle),
+    [canon]
+  );
   const docIndex = useMemo(
     () => canonSortedByDate.findIndex((d) => d.id === (doc?.id ?? "")),
     [canonSortedByDate, doc]
   );
-
   const prevDoc = docIndex > 0 ? canonSortedByDate[docIndex - 1] : null;
   const nextDoc =
     docIndex >= 0 && docIndex < canonSortedByDate.length - 1
@@ -760,20 +709,56 @@ export default function SecurityGuidebook() {
     if (!isDesktop) setSidebarOpen(false);
   };
 
-  const toggleSection = (secKey) => {
+  const toggleSection = (secKey) =>
     setOpenSections((prev) => ({ ...prev, [secKey]: !prev[secKey] }));
-  };
-
-  const toggleGroup = (groupKey) => {
+  const toggleGroup = (groupKey) =>
     setOpenGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
-  };
 
   const editUrl = doc ? `${SITE.repoUrl}/blob/main/${doc.sourcePath}` : SITE.repoUrl;
   const meta = teamMeta(doc?.team);
+  useEffect(() => {
+    const root = mainRef.current;
+    const article = articleRef.current;
+    const HEADER_OFFSET = 100;
+
+    const onScroll = () => {
+      const rootTop = root.getBoundingClientRect().top;
+      const threshold = rootTop + HEADER_OFFSET;
+
+      const targets = tocItems
+        .map((tci) => {
+          const el = article.querySelector(`#${CSS.escape(tci.id)}`);
+          if (!el) return null;
+          const top = el.getBoundingClientRect().top;
+          return { id: tci.id, top };
+        })
+        .filter(Boolean);
+
+      let active = targets[0].id;
+      for (const { id, top } of targets) {
+        if (top <= threshold) active = id;
+      }
+
+      setActiveTocId((prev) => {
+        if (prev !== active) {
+          console.log(
+            `[TOC scroll] Active changed: ${prev} → ${active} (threshold=${Math.round(threshold)})`
+          );
+        }
+        return active;
+      });
+    };
+
+    root.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    return () => {
+      root.removeEventListener("scroll", onScroll);
+    };
+  }, [tocItems, doc?.id]);
 
   useEffect(() => {
     if (!doc) return;
-
     const raf = requestAnimationFrame(() => {
       const article = articleRef.current;
       if (!article) {
@@ -783,10 +768,10 @@ export default function SecurityGuidebook() {
       }
 
       const headings = Array.from(article.querySelectorAll("h1, h2, h3, h4"));
+
       if (headings.length === 0) {
         try {
-          const fallback = buildToc(doc.content) || [];
-          setTocItems(fallback);
+          setTocItems(buildToc(doc.content) || []);
         } catch {
           setTocItems([]);
         }
@@ -794,30 +779,12 @@ export default function SecurityGuidebook() {
         return;
       }
 
-      const used = new Map();
-      const ensureUniqueId = (base) => {
-        const prev = used.get(base) ?? 0;
-        used.set(base, prev + 1);
-        return prev > 0 ? `${base}-${prev + 1}` : base;
-      };
-
       const items = headings
         .map((el) => {
           const text = (el.textContent || "").trim();
           if (!text) return null;
-
-          let hid = el.getAttribute("id");
-          if (!hid) {
-            hid = ensureUniqueId(slugify(text));
-            el.setAttribute("id", hid);
-          } else {
-            const unique = ensureUniqueId(hid);
-            if (unique !== hid) {
-              hid = unique;
-              el.setAttribute("id", hid);
-            }
-          }
-
+          const hid = el.getAttribute("id");
+          if (!hid) return null;
           return { id: hid, text };
         })
         .filter(Boolean);
@@ -825,7 +792,6 @@ export default function SecurityGuidebook() {
       setTocItems(items);
       setActiveTocId(items[0]?.id ?? null);
     });
-
     return () => cancelAnimationFrame(raf);
   }, [doc?.id, doc?.content]);
 
@@ -834,29 +800,35 @@ export default function SecurityGuidebook() {
     const article = articleRef.current;
     if (!root || !article || tocItems.length === 0) return;
 
-    const targets = tocItems
-      .map((tci) => article.querySelector(`#${CSS.escape(tci.id)}`))
-      .filter(Boolean);
+    const HEADER_OFFSET = 100;
 
-    if (targets.length === 0) return;
+    const onScroll = () => {
+      const targets = tocItems
+        .map((tci) => ({
+          id: tci.id,
+          el: article.querySelector(`#${CSS.escape(tci.id)}`),
+        }))
+        .filter((t) => t.el);
 
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => (b.intersectionRatio || 0) - (a.intersectionRatio || 0))[0];
+      if (!targets.length) return;
 
-        if (visible?.target?.id) setActiveTocId(visible.target.id);
-      },
-      {
-        root,
-        rootMargin: "-15% 0px -75% 0px",
-        threshold: [0.1, 0.2, 0.4, 0.6],
+      const rootTop = root.getBoundingClientRect().top;
+      const threshold = rootTop + HEADER_OFFSET;
+
+      let active = targets[0].id;
+      for (const { id, el } of targets) {
+        if (el.getBoundingClientRect().top <= threshold) {
+          active = id;
+        }
       }
-    );
 
-    targets.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
+      setActiveTocId(active);
+    };
+
+    root.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    return () => root.removeEventListener("scroll", onScroll);
   }, [tocItems, doc?.id]);
 
   const scrollToHeading = (headingId) => {
@@ -867,7 +839,7 @@ export default function SecurityGuidebook() {
     const el = article.querySelector(`#${CSS.escape(headingId)}`);
     if (!el) return;
 
-    const HEADER_OFFSET = 88;
+    const HEADER_OFFSET = 96;
     const rootRect = root.getBoundingClientRect();
     const elRect = el.getBoundingClientRect();
     const top = elRect.top - rootRect.top + root.scrollTop - HEADER_OFFSET;
@@ -935,7 +907,6 @@ export default function SecurityGuidebook() {
                   </div>
                 </div>
               </button>
-
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden rounded-md p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900"
@@ -957,7 +928,6 @@ export default function SecurityGuidebook() {
                   className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:focus:ring-slate-800"
                 />
               </div>
-
               <div className="flex items-center justify-between gap-2">
                 <button
                   onClick={onSwitchLang}
@@ -966,7 +936,6 @@ export default function SecurityGuidebook() {
                 >
                   {safeLang === "pl" ? "EN" : "PL"}
                 </button>
-
                 <button
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                   className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
@@ -975,7 +944,6 @@ export default function SecurityGuidebook() {
                   {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
                   {theme === "dark" ? "Light" : "Dark"}
                 </button>
-
                 <a
                   href={SITE.repoUrl}
                   target="_blank"
@@ -993,7 +961,6 @@ export default function SecurityGuidebook() {
                   <div className="px-2 mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     {t.start}
                   </div>
-
                   <div className="space-y-1">
                     {pinned.map((item) => (
                       <button
@@ -1019,30 +986,26 @@ export default function SecurityGuidebook() {
 
               {sectionsList.map((sec) => {
                 const gm = teamMeta(sec.team);
-
                 const secIsOpen = isSearching ? true : Boolean(openSections[sec.key]);
-                const chevronCls = secIsOpen ? "rotate-90" : "rotate-0";
 
                 return (
                   <div key={sec.key} className="mb-6">
                     <button
                       onClick={() => toggleSection(sec.key)}
                       className="w-full px-2 mb-2 flex items-center justify-between rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1624]/60"
-                      title="Toggle section"
                       type="button"
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <ChevronRight
                           className={cx(
                             "h-4 w-4 text-slate-400 transition-transform",
-                            chevronCls
+                            secIsOpen ? "rotate-90" : "rotate-0"
                           )}
                         />
                         <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">
                           {sec.sectionLabel}
                         </div>
                       </div>
-
                       <span
                         className={cx(
                           "rounded-full border px-2 py-0.5 text-[10px] shrink-0",
@@ -1058,19 +1021,15 @@ export default function SecurityGuidebook() {
                         {sec.subsArr?.length ? (
                           <div className="space-y-3">
                             {sec.subsArr.map((sub) => {
-                              const subKey = sub.key;
-
                               const subIsOpen = isSearching
                                 ? true
-                                : Boolean(openGroups[subKey]);
-                              const subChevronCls = subIsOpen ? "rotate-90" : "rotate-0";
+                                : Boolean(openGroups[sub.key]);
                               const isPsWriteups = sub.kind === "portswigger-writeups";
-
                               return (
                                 <div key={sub.key}>
                                   {sub.label ? (
                                     <button
-                                      onClick={() => toggleGroup(subKey)}
+                                      onClick={() => toggleGroup(sub.key)}
                                       className="w-full px-2 py-1 flex items-center justify-between rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1624]/60"
                                       type="button"
                                     >
@@ -1078,7 +1037,7 @@ export default function SecurityGuidebook() {
                                         <ChevronRight
                                           className={cx(
                                             "h-4 w-4 text-slate-400 transition-transform",
-                                            subChevronCls
+                                            subIsOpen ? "rotate-90" : "rotate-0"
                                           )}
                                         />
                                         <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
@@ -1126,10 +1085,6 @@ export default function SecurityGuidebook() {
                                             const topicIsOpen = isSearching
                                               ? true
                                               : Boolean(openGroups[topic.key]);
-                                            const topicChevronCls = topicIsOpen
-                                              ? "rotate-90"
-                                              : "rotate-0";
-
                                             return (
                                               <div key={topic.key}>
                                                 <button
@@ -1141,7 +1096,9 @@ export default function SecurityGuidebook() {
                                                     <ChevronRight
                                                       className={cx(
                                                         "h-4 w-4 text-slate-400 transition-transform",
-                                                        topicChevronCls
+                                                        topicIsOpen
+                                                          ? "rotate-90"
+                                                          : "rotate-0"
                                                       )}
                                                     />
                                                     <div className="text-[12px] font-medium text-slate-600 dark:text-slate-300 truncate">
@@ -1149,17 +1106,12 @@ export default function SecurityGuidebook() {
                                                     </div>
                                                   </div>
                                                 </button>
-
                                                 {topicIsOpen && (
                                                   <div className="mt-1 space-y-2 pl-6">
                                                     {topic.diffsArr?.map((g) => {
                                                       const gIsOpen = isSearching
                                                         ? true
                                                         : Boolean(openGroups[g.key]);
-                                                      const gChevronCls = gIsOpen
-                                                        ? "rotate-90"
-                                                        : "rotate-0";
-
                                                       return (
                                                         <div key={g.key}>
                                                           <button
@@ -1173,19 +1125,19 @@ export default function SecurityGuidebook() {
                                                               <ChevronRight
                                                                 className={cx(
                                                                   "h-4 w-4 text-slate-400 transition-transform",
-                                                                  gChevronCls
+                                                                  gIsOpen
+                                                                    ? "rotate-90"
+                                                                    : "rotate-0"
                                                                 )}
                                                               />
                                                               <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
                                                                 {g.label}
                                                               </div>
                                                             </div>
-
                                                             <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">
                                                               {g.items.length}
                                                             </span>
                                                           </button>
-
                                                           {gIsOpen && (
                                                             <div className="mt-1 space-y-1 pl-6">
                                                               {g.items.map((item) => (
@@ -1240,8 +1192,6 @@ export default function SecurityGuidebook() {
                               const gIsOpen = isSearching
                                 ? true
                                 : Boolean(openGroups[g.key]);
-                              const gChevronCls = gIsOpen ? "rotate-90" : "rotate-0";
-
                               return (
                                 <div key={g.key}>
                                   <button
@@ -1253,19 +1203,17 @@ export default function SecurityGuidebook() {
                                       <ChevronRight
                                         className={cx(
                                           "h-4 w-4 text-slate-400 transition-transform",
-                                          gChevronCls
+                                          gIsOpen ? "rotate-90" : "rotate-0"
                                         )}
                                       />
                                       <div className="text-[12px] font-medium text-slate-600 dark:text-slate-300 truncate">
                                         {g.label}
                                       </div>
                                     </div>
-
                                     <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">
                                       {g.items.length}
                                     </span>
                                   </button>
-
                                   {gIsOpen && (
                                     <div className="mt-1 space-y-1 pl-6">
                                       {g.items.map((item) => (
@@ -1310,7 +1258,6 @@ export default function SecurityGuidebook() {
                 </span>
                 . Field notes for Red/Blue work.
               </div>
-
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => onGoDoc("about")}
@@ -1319,7 +1266,6 @@ export default function SecurityGuidebook() {
                 >
                   {safeLang === "pl" ? "O mnie" : "About"}
                 </button>
-
                 <a
                   href={SITE.repoUrl}
                   target="_blank"
@@ -1347,26 +1293,74 @@ export default function SecurityGuidebook() {
                     <Menu size={18} />
                   </button>
                 )}
-
                 <div className={cx("rounded-xl border px-2.5 py-1 text-xs", meta.chip)}>
                   <span className="inline-flex items-center gap-2">
                     <meta.Icon size={14} />
                     {meta.label}
                   </span>
                 </div>
-
                 <div className="text-sm font-semibold truncate">{doc.title}</div>
               </div>
 
-              <a
-                href={editUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900 shrink-0"
-              >
-                <span className="hidden sm:inline">{t.edit}</span>
-                <ExternalLink size={12} />
-              </a>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="relative" ref={exportRef}>
+                  <button
+                    onClick={() => setExportOpen((v) => !v)}
+                    className={cx(
+                      "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors",
+                      exportOpen
+                        ? "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-900"
+                        : "border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
+                    )}
+                    type="button"
+                    aria-haspopup="true"
+                    aria-expanded={exportOpen}
+                  >
+                    <Download size={12} />
+                    <span className="hidden sm:inline">Export</span>
+                  </button>
+
+                  {exportOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 z-50 flex flex-col bg-white dark:bg-[#0a0e16] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden text-xs min-w-[160px]">
+                      <div className="px-3 pt-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
+                        Eksportuj notatkę
+                      </div>
+                      <button
+                        onClick={() => {
+                          exportAsPDF(doc, articleRef);
+                          setExportOpen(false);
+                        }}
+                        className="px-4 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-700 dark:text-slate-300 flex items-center gap-2.5 transition-colors"
+                        type="button"
+                      >
+                        <span className="text-base leading-none">📄</span>
+                        <span>PDF / Drukuj</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          exportAsMD(doc);
+                          setExportOpen(false);
+                        }}
+                        className="px-4 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-700 dark:text-slate-300 flex items-center gap-2.5 transition-colors"
+                        type="button"
+                      >
+                        <span className="text-base leading-none">⬇</span>
+                        <span>Raw Markdown</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <a
+                  href={editUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
+                >
+                  <span className="hidden sm:inline">{t.edit}</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
             </div>
           </header>
 
@@ -1412,7 +1406,6 @@ export default function SecurityGuidebook() {
                 >
                   <ChevronLeft size={16} /> {t.prev}
                 </button>
-
                 <button
                   disabled={!nextDoc}
                   onClick={() => nextDoc && onGoDoc(nextDoc.id)}
@@ -1430,12 +1423,15 @@ export default function SecurityGuidebook() {
             </article>
 
             <aside className="hidden lg:block">
-              <div className="sticky top-24">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <div className="sticky top-24 max-h-[calc(100vh-7rem)] flex flex-col">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 shrink-0">
                   {t.onThisPage}
                 </div>
-
-                <div className="mt-3 space-y-1">
+                <div
+                  className="mt-3 overflow-y-auto space-y-0.5 pr-1
+      scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800
+      scrollbar-track-transparent"
+                >
                   {tocItems.length === 0 ? (
                     <div className="text-sm text-slate-500 dark:text-slate-400">-</div>
                   ) : (
@@ -1444,10 +1440,10 @@ export default function SecurityGuidebook() {
                         key={item.id}
                         onClick={() => scrollToHeading(item.id)}
                         className={cx(
-                          "w-full text-left rounded-md px-2 py-1 text-sm transition",
+                          "w-full text-left rounded-md px-2 py-1.5 text-sm transition-colors",
                           activeTocId === item.id
-                            ? "text-slate-900 bg-slate-100 dark:text-slate-100 dark:bg-slate-900/60"
-                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-900/40"
+                            ? "text-slate-900 bg-slate-100 dark:text-slate-100 dark:bg-slate-900/60 font-medium"
+                            : "text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-900/40"
                         )}
                         type="button"
                       >
