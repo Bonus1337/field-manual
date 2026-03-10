@@ -734,7 +734,8 @@ export default function SecurityGuidebook() {
         })
         .filter(Boolean);
 
-      let active = targets[0].id;
+      let active = targets.length > 0 ? targets[0].id : null;
+      if (active && active !== activeTocId) setActiveTocId(active);
       for (const { id, top } of targets) {
         if (top <= threshold) active = id;
       }
