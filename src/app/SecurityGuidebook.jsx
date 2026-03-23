@@ -716,47 +716,6 @@ export default function SecurityGuidebook() {
 
   const editUrl = doc ? `${SITE.repoUrl}/blob/main/${doc.sourcePath}` : SITE.repoUrl;
   const meta = teamMeta(doc?.team);
-  useEffect(() => {
-    const root = mainRef.current;
-    const article = articleRef.current;
-    const HEADER_OFFSET = 100;
-
-    const onScroll = () => {
-      const rootTop = root.getBoundingClientRect().top;
-      const threshold = rootTop + HEADER_OFFSET;
-
-      const targets = tocItems
-        .map((tci) => {
-          const el = article.querySelector(`#${CSS.escape(tci.id)}`);
-          if (!el) return null;
-          const top = el.getBoundingClientRect().top;
-          return { id: tci.id, top };
-        })
-        .filter(Boolean);
-
-      let active = targets.length > 0 ? targets[0].id : null;
-      if (active && active !== activeTocId) setActiveTocId(active);
-      for (const { id, top } of targets) {
-        if (top <= threshold) active = id;
-      }
-
-      setActiveTocId((prev) => {
-        if (prev !== active) {
-          console.log(
-            `[TOC scroll] Active changed: ${prev} → ${active} (threshold=${Math.round(threshold)})`
-          );
-        }
-        return active;
-      });
-    };
-
-    root.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-
-    return () => {
-      root.removeEventListener("scroll", onScroll);
-    };
-  }, [tocItems, doc?.id]);
 
   useEffect(() => {
     if (!doc) return;
