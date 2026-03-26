@@ -1,25 +1,23 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Fuse from "fuse.js";
 import {
-  BookOpen,
   Search,
   Menu,
   X,
-  Github,
   ExternalLink,
-  Sun,
-  Moon,
   Copy,
   Check,
-  ChevronLeft,
   ChevronRight,
   Shield,
   Crosshair,
   Hash,
   Download,
+  Terminal,
+  Clock,
+  Home,
 } from "lucide-react";
 import { buildToc, slugify } from "./toc.js";
 import { loadContentBilingual } from "./contentLoader.js";
@@ -33,71 +31,95 @@ const SITE = {
 
 const UI = {
   pl: {
-    search: 'Szukaj… ("/")',
-    edit: "Edytuj na GitHub",
-    updated: "Aktualizacja",
-    difficulty: "Poziom",
-    fallback: "Brak tej wersji językowej - pokazuję dostępną.",
-    onThisPage: "Na tej stronie",
-    next: "Następna",
-    prev: "Poprzednia",
-    start: "Start",
+    search: 'szukaj… ("/")',
+    edit: "Edytuj",
+    updated: "Updated",
+    difficulty: "Lvl",
+    fallback: "Brak tej wersji językowej — pokazuję dostępną.",
+    onThisPage: "NA TEJ STRONIE",
+    next: "next",
+    prev: "prev",
+    start: "PINNED",
+    home: "HOME",
   },
   en: {
-    search: 'Search… ("/")',
-    edit: "Edit on GitHub",
+    search: 'search… ("/")',
+    edit: "Edit",
     updated: "Updated",
-    difficulty: "Difficulty",
-    fallback: "No translation available - showing the other language.",
-    onThisPage: "On this page",
-    next: "Next",
-    prev: "Previous",
-    start: "Start",
+    difficulty: "Lvl",
+    fallback: "No translation available — showing other language.",
+    onThisPage: "ON THIS PAGE",
+    next: "next",
+    prev: "prev",
+    start: "PINNED",
+    home: "HOME",
   },
 };
 
-function cx(...cls) {
-  return cls.filter(Boolean).join(" ");
-}
+const T = {
+  bg: "#07090f",
+  bgSidebar: "#04060a",
+  bgCard: "#0c1018",
+  bgCardHover: "#111827",
+  bgHeader: "#05070c",
+  border: "#1a2636",
+  borderHover: "#253850",
+  red: "#ff3a5c",
+  redDim: "rgba(255,58,92,0.10)",
+  redBorder: "rgba(255,58,92,0.35)",
+  redGlow: "0 0 16px rgba(255,58,92,0.18), 0 0 4px rgba(255,58,92,0.12)",
+  blue: "#38bdf8",
+  blueDim: "rgba(56,189,248,0.08)",
+  blueBorder: "rgba(56,189,248,0.30)",
+  blueGlow: "0 0 16px rgba(56,189,248,0.15), 0 0 4px rgba(56,189,248,0.10)",
+  gen: "#22c55e",
+  genDim: "rgba(34,197,94,0.07)",
+  genBorder: "rgba(34,197,94,0.25)",
+  genGlow: "0 0 16px rgba(34,197,94,0.12)",
+  amber: "#f59e0b",
+  cyan: "#a5f3fc",
+  text: "#8b9cb5",
+  textBright: "#e2e8f0",
+  textMuted: "#3d5068",
+  textDim: "#1e2d3d",
+  mono: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+};
 
-function teamMeta(team) {
-  switch (team) {
-    case "red":
-      return {
-        label: "Red",
-        Icon: Crosshair,
-        chip: "border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200",
-      };
-    case "blue":
-      return {
-        label: "Blue",
-        Icon: Shield,
-        chip: "border-sky-300 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200",
-      };
-    default:
-      return {
-        label: "General",
-        Icon: Hash,
-        chip: "border-slate-300 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-200",
-      };
-  }
-}
-
-function getStoredTheme() {
-  const v = localStorage.getItem("fm_theme");
-  return v === "light" ? "light" : "dark";
-}
-function setStoredTheme(v) {
-  localStorage.setItem("fm_theme", v);
+function ts(team) {
+  if (team === "red")
+    return {
+      color: T.red,
+      dim: T.redDim,
+      border: T.redBorder,
+      glow: T.redGlow,
+      label: "RED",
+      Icon: Crosshair,
+    };
+  if (team === "blue")
+    return {
+      color: T.blue,
+      dim: T.blueDim,
+      border: T.blueBorder,
+      glow: T.blueGlow,
+      label: "BLUE",
+      Icon: Shield,
+    };
+  return {
+    color: T.gen,
+    dim: T.genDim,
+    border: T.genBorder,
+    glow: T.genGlow,
+    label: "GEN",
+    Icon: Hash,
+  };
 }
 
 function nodeToText(node) {
   if (node == null) return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(nodeToText).join("");
-  if (typeof node === "object" && node.props && node.props.children) {
+  if (typeof node === "object" && node.props?.children)
     return nodeToText(node.props.children);
-  }
   return "";
 }
 
@@ -108,6 +130,7 @@ function titleize(s = "") {
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
 function parseSortableDate(v) {
   if (!v) return 0;
   const t = Date.parse(String(v));
@@ -119,6 +142,10 @@ function sortDocsByDateAscThenTitle(a, b) {
   const db = parseSortableDate(b?.updatedAt);
   if (da !== db) return da - db;
   return String(a?.title || "").localeCompare(String(b?.title || ""));
+}
+
+function sortByDateDesc(a, b) {
+  return parseSortableDate(b?.updatedAt) - parseSortableDate(a?.updatedAt);
 }
 
 const DIFF_ORDER = {
@@ -136,8 +163,7 @@ const DIFF_LABEL = {
 };
 
 function normalizeDifficulty(v) {
-  if (!v) return "unrated";
-  return String(v).trim().toLowerCase();
+  return v ? String(v).trim().toLowerCase() : "unrated";
 }
 
 function labelDifficulty(v) {
@@ -147,11 +173,11 @@ function labelDifficulty(v) {
 
 function sortByDifficulty(platform, a, b) {
   const order = DIFF_ORDER[platform] || [];
-  const ia = order.indexOf(normalizeDifficulty(a));
-  const ib = order.indexOf(normalizeDifficulty(b));
-  const va = ia === -1 ? 999 : ia;
-  const vb = ib === -1 ? 999 : ib;
-  if (va !== vb) return va - vb;
+  const va = order.indexOf(normalizeDifficulty(a));
+  const vb = order.indexOf(normalizeDifficulty(b));
+  if ((va === -1 ? 999 : va) !== (vb === -1 ? 999 : vb)) {
+    return (va === -1 ? 999 : va) - (vb === -1 ? 999 : vb);
+  }
   return String(a || "").localeCompare(String(b || ""));
 }
 
@@ -168,53 +194,105 @@ const PINNED_SET = new Set(PINNED_ORDER);
 
 function useIsDesktop() {
   const QUERY = "(min-width: 1024px)";
-  const getSnapshot = () => {
-    if (typeof globalThis === "undefined" || !globalThis.matchMedia) return true;
-    return globalThis.matchMedia(QUERY).matches;
-  };
-  const getServerSnapshot = () => true;
-  const subscribe = (onStoreChange) => {
+
+  const snap = () =>
+    typeof globalThis !== "undefined" && globalThis.matchMedia
+      ? globalThis.matchMedia(QUERY).matches
+      : true;
+
+  const subscribe = (cb) => {
     const mql = globalThis.matchMedia(QUERY);
-    const handler = () => onStoreChange();
-    if (mql.addEventListener) mql.addEventListener("change", handler);
-    else mql.addListener(handler);
-    return () => {
-      if (mql.removeEventListener) mql.removeEventListener("change", handler);
-      else mql.removeListener(handler);
-    };
+    const h = () => cb();
+
+    if (mql.addEventListener) {
+      mql.addEventListener("change", h);
+      return () => mql.removeEventListener("change", h);
+    }
+
+    mql.addListener(h);
+    return () => mql.removeListener(h);
   };
-  return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  return React.useSyncExternalStore(subscribe, snap, () => true);
 }
 
 function CodeBlock({ code, language }) {
   const [copied, setCopied] = useState(false);
+
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(String(code || "").trim());
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
-    } catch (e) {
-      console.warn("Clipboard copy failed", e);
+    } catch {
+      /* empty */
     }
   };
+
   return (
-    <div className="my-5 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-800">
-        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-          {language || "code"}
+    <div
+      style={{
+        margin: "20px 0",
+        borderRadius: "6px",
+        border: `1px solid ${T.border}`,
+        background: "#030507",
+        overflow: "hidden",
+        fontFamily: T.mono,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "8px 14px",
+          borderBottom: `1px solid ${T.border}`,
+          background: T.bgCard,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+          <span style={{ color: "#ff5f57", fontSize: "9px" }}>●</span>
+          <span style={{ color: "#febc2e", fontSize: "9px" }}>●</span>
+          <span style={{ color: "#28c840", fontSize: "9px" }}>●</span>
+          <span style={{ color: T.textMuted, fontSize: "11px", marginLeft: "8px" }}>
+            {language || "bash"}
+          </span>
         </div>
+
         <button
           onClick={onCopy}
-          className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900"
-          title="Copy"
-          type="button"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            padding: "3px 9px",
+            borderRadius: "4px",
+            border: `1px solid ${T.border}`,
+            background: "transparent",
+            color: T.textMuted,
+            fontFamily: T.mono,
+            fontSize: "11px",
+            cursor: "pointer",
+            transition: "color 0.1s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = T.textBright)}
+          onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
         >
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? <Check size={11} /> : <Copy size={11} />}
+          {copied ? "copied" : "copy"}
         </button>
       </div>
-      <pre className="overflow-x-auto p-4 text-sm leading-relaxed">
-        <code className="font-mono text-slate-900 dark:text-slate-100">
+
+      <pre
+        style={{
+          overflowX: "auto",
+          padding: "18px 20px",
+          margin: 0,
+          fontSize: "13px",
+          lineHeight: "1.75",
+        }}
+      >
+        <code style={{ fontFamily: T.mono, color: T.cyan }}>
           {String(code || "").trim()}
         </code>
       </pre>
@@ -223,41 +301,106 @@ function CodeBlock({ code, language }) {
 }
 
 function Markdown({ content }) {
-  const usedIds = new Map();
+  const usedIds = {};
 
-  const computeHeading = (children) => {
+  const makeId = (children) => {
     const text = nodeToText(children).trim();
     const m = text.match(/\s*\{#([a-z0-9\-_]+)\}\s*$/i);
     const visibleText = m ? text.replace(m[0], "").trim() : text;
     const baseId = m ? m[1] : slugify(visibleText);
-    const prev = usedIds.get(baseId) ?? 0;
-    usedIds.set(baseId, prev + 1);
-    const id = prev > 0 ? `${baseId}-${prev + 1}` : baseId;
-    return { id, visibleText, hasExplicit: Boolean(m) };
+    const prev = usedIds[baseId] ?? 0;
+    usedIds[baseId] = prev + 1;
+
+    return {
+      id: prev > 0 ? `${baseId}-${prev + 1}` : baseId,
+      visibleText,
+      hasExplicit: Boolean(m),
+    };
   };
 
-  const [lightbox, setLightbox] = useState({ open: false, src: "", alt: "" });
+  const [lb, setLb] = useState({ open: false, src: "", alt: "" });
 
   useEffect(() => {
-    if (!lightbox.open) return;
-    const prev = document.body.style.overflow;
+    if (!lb.open) return;
+    const p = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = p;
     };
-  }, [lightbox.open]);
+  }, [lb.open]);
 
   useEffect(() => {
-    if (!lightbox.open) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") setLightbox({ open: false, src: "", alt: "" });
+    if (!lb.open) return;
+    const fn = (e) => {
+      if (e.key === "Escape") setLb({ open: false, src: "", alt: "" });
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [lightbox.open]);
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [lb.open]);
+
+  const s = {
+    fontFamily: T.mono,
+    color: T.text,
+    lineHeight: "1.85",
+    fontSize: "14px",
+  };
+
+  const H = ({ level, children }) => {
+    const { id, visibleText, hasExplicit } = makeId(children);
+
+    const [color, prefix, size, mt] =
+      level === 1
+        ? [T.textBright, null, "22px", "0"]
+        : level === 2
+          ? [
+              T.textBright,
+              <span style={{ color: T.gen, marginRight: "8px", opacity: 0.9 }}>#</span>,
+              "17px",
+              "32px",
+            ]
+          : level === 3
+            ? [
+                T.text,
+                <span style={{ color: T.blue, marginRight: "8px", opacity: 0.8 }}>
+                  ##
+                </span>,
+                "15px",
+                "22px",
+              ]
+            : [
+                T.text,
+                <span style={{ color: T.textMuted, marginRight: "8px" }}>###</span>,
+                "14px",
+                "18px",
+              ];
+
+    const Tag = `h${level}`;
+
+    return (
+      <Tag
+        id={id}
+        style={{
+          color,
+          fontFamily: T.mono,
+          fontSize: size,
+          fontWeight: level <= 2 ? 700 : 600,
+          margin: `${mt} 0 10px`,
+          paddingBottom: level === 1 ? "10px" : 0,
+          borderBottom: level === 1 ? `1px solid ${T.border}` : "none",
+          scrollMarginTop: "100px",
+          display: "flex",
+          alignItems: "baseline",
+          gap: 0,
+        }}
+      >
+        {prefix}
+        {hasExplicit ? visibleText : children}
+      </Tag>
+    );
+  };
 
   return (
-    <div className="prose prose-slate max-w-none dark:prose-invert prose-headings:scroll-mt-24">
+    <div style={s}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -265,35 +408,194 @@ function Markdown({ content }) {
             return <>{children}</>;
           },
           h1({ children }) {
-            const { id, visibleText, hasExplicit } = computeHeading(children);
-            return <h1 id={id}>{hasExplicit ? visibleText : children}</h1>;
+            return <H level={1}>{children}</H>;
           },
           h2({ children }) {
-            const { id, visibleText, hasExplicit } = computeHeading(children);
-            return <h2 id={id}>{hasExplicit ? visibleText : children}</h2>;
+            return <H level={2}>{children}</H>;
           },
           h3({ children }) {
-            const { id, visibleText, hasExplicit } = computeHeading(children);
-            return <h3 id={id}>{hasExplicit ? visibleText : children}</h3>;
+            return <H level={3}>{children}</H>;
           },
           h4({ children }) {
-            const { id, visibleText, hasExplicit } = computeHeading(children);
-            return <h4 id={id}>{hasExplicit ? visibleText : children}</h4>;
+            return <H level={4}>{children}</H>;
+          },
+          p({ children }) {
+            return (
+              <p style={{ color: T.text, lineHeight: "1.85", margin: "12px 0" }}>
+                {children}
+              </p>
+            );
+          },
+          ul({ children }) {
+            return (
+              <ul style={{ margin: "12px 0", paddingLeft: 0, listStyle: "none" }}>
+                {children}
+              </ul>
+            );
+          },
+          ol({ children }) {
+            return (
+              <ol style={{ margin: "12px 0", paddingLeft: "18px", color: T.text }}>
+                {children}
+              </ol>
+            );
+          },
+          li({ children, ordered }) {
+            return ordered ? (
+              <li style={{ color: T.text, margin: "5px 0", lineHeight: "1.7" }}>
+                {children}
+              </li>
+            ) : (
+              <li
+                style={{
+                  color: T.text,
+                  margin: "5px 0",
+                  display: "flex",
+                  gap: "8px",
+                  lineHeight: "1.7",
+                }}
+              >
+                <span
+                  style={{
+                    color: T.gen,
+                    flexShrink: 0,
+                    marginTop: "1px",
+                    fontSize: "12px",
+                  }}
+                >
+                  ›
+                </span>
+                <span style={{ flex: 1 }}>{children}</span>
+              </li>
+            );
+          },
+          a({ href, children }) {
+            return (
+              <a
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  color: T.blue,
+                  textDecoration: "none",
+                  borderBottom: `1px solid ${T.blueBorder}`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#7dd3fc";
+                  e.currentTarget.style.borderBottomColor = T.blue;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = T.blue;
+                  e.currentTarget.style.borderBottomColor = T.blueBorder;
+                }}
+              >
+                {children}
+              </a>
+            );
+          },
+          strong({ children }) {
+            return (
+              <strong style={{ color: T.textBright, fontWeight: 700 }}>{children}</strong>
+            );
+          },
+          em({ children }) {
+            return <em style={{ color: T.amber, fontStyle: "italic" }}>{children}</em>;
+          },
+          hr() {
+            return (
+              <hr
+                style={{
+                  border: "none",
+                  borderTop: `1px solid ${T.border}`,
+                  margin: "28px 0",
+                }}
+              />
+            );
+          },
+          blockquote({ children }) {
+            return (
+              <blockquote
+                style={{
+                  borderLeft: `3px solid ${T.amber}`,
+                  background: "rgba(245,158,11,0.06)",
+                  padding: "12px 18px",
+                  margin: "16px 0",
+                  borderRadius: "0 4px 4px 0",
+                }}
+              >
+                {children}
+              </blockquote>
+            );
+          },
+          table({ children }) {
+            return (
+              <div style={{ overflowX: "auto", margin: "16px 0" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontFamily: T.mono,
+                    fontSize: "13px",
+                  }}
+                >
+                  {children}
+                </table>
+              </div>
+            );
+          },
+          th({ children }) {
+            return (
+              <th
+                style={{
+                  color: T.textBright,
+                  fontWeight: 600,
+                  padding: "8px 14px",
+                  background: T.bgCard,
+                  borderBottom: `1px solid ${T.border}`,
+                  textAlign: "left",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {children}
+              </th>
+            );
+          },
+          td({ children }) {
+            return (
+              <td
+                style={{
+                  color: T.text,
+                  padding: "8px 14px",
+                  borderBottom: `1px solid ${T.textDim}`,
+                }}
+              >
+                {children}
+              </td>
+            );
           },
           img({ src, alt }) {
-            const s = String(src || "");
+            const s2 = String(src || "");
             const a = String(alt || "");
             return (
               <button
                 type="button"
-                onClick={() => setLightbox({ open: true, src: s, alt: a })}
-                className="my-4 block w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm dark:border-slate-800 dark:bg-slate-950"
-                title="Kliknij, żeby powiększyć"
+                onClick={() => setLb({ open: true, src: s2, alt: a })}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  background: T.bgCard,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: "6px",
+                  overflow: "hidden",
+                  cursor: "zoom-in",
+                  padding: 0,
+                  margin: "20px 0",
+                }}
               >
                 <img
-                  src={s}
+                  src={s2}
                   alt={a}
-                  className="w-full h-auto cursor-zoom-in"
+                  style={{ width: "100%", height: "auto", display: "block" }}
                   loading="lazy"
                 />
               </button>
@@ -303,72 +605,603 @@ function Markdown({ content }) {
             const raw = String(children ?? "");
             const trimmed = raw.replace(/\n$/, "");
             const match = /language-([\w-]+)/.exec(className || "");
-            const hasLang = Boolean(match?.[1]);
+
             if (inline) {
               return (
-                <code className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[0.95em] dark:bg-slate-900">
+                <code
+                  style={{
+                    fontFamily: T.mono,
+                    background: "rgba(0,0,0,0.4)",
+                    border: `1px solid ${T.border}`,
+                    borderRadius: "3px",
+                    padding: "1px 6px",
+                    fontSize: "0.9em",
+                    color: T.cyan,
+                  }}
+                >
                   {raw}
                 </code>
               );
             }
-            const isSingleLine = !trimmed.includes("\n");
-            if (!hasLang && isSingleLine && trimmed.trim().length <= 120) {
+
+            if (!match?.[1] && !trimmed.includes("\n") && trimmed.trim().length <= 120) {
               return (
-                <code className="inline-flex max-w-full overflow-x-auto rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[0.9em] text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                <code
+                  style={{
+                    display: "inline-flex",
+                    fontFamily: T.mono,
+                    background: "#030507",
+                    border: `1px solid ${T.border}`,
+                    borderRadius: "4px",
+                    padding: "3px 10px",
+                    fontSize: "0.88em",
+                    color: T.cyan,
+                    overflowX: "auto",
+                    maxWidth: "100%",
+                  }}
+                >
                   {trimmed.trim()}
                 </code>
               );
             }
+
             return <CodeBlock code={raw} language={match?.[1]} />;
-          },
-          blockquote({ children }) {
-            return (
-              <blockquote className="border-l-4 border-amber-300 bg-amber-50/60 p-4 not-italic dark:border-amber-900/70 dark:bg-amber-950/20">
-                {children}
-              </blockquote>
-            );
           },
         }}
       >
         {content}
       </ReactMarkdown>
 
-      {lightbox.open && (
+      {lb.open && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm"
-          onClick={() => setLightbox({ open: false, src: "", alt: "" })}
-          role="dialog"
-          aria-modal="true"
+          onClick={() => setLb({ open: false, src: "", alt: "" })}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0,0,0,0.88)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
         >
-          <div
-            className="absolute inset-0 flex items-center justify-center p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative max-h-[90vh] max-w-[95vw]">
-              <button
-                type="button"
-                onClick={() => setLightbox({ open: false, src: "", alt: "" })}
-                className="absolute -top-3 -right-3 rounded-full border border-slate-200 bg-white p-2 shadow-md hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
-                title="Zamknij"
-              >
-                <X size={16} />
-              </button>
-              <img
-                src={lightbox.src}
-                alt={lightbox.alt}
-                className="max-h-[90vh] max-w-[95vw] rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-950 cursor-zoom-out"
-                onClick={() => setLightbox({ open: false, src: "", alt: "" })}
-              />
-              {lightbox.alt ? (
-                <div className="mt-2 text-center text-xs text-slate-200/90">
-                  {lightbox.alt}
-                </div>
-              ) : null}
-            </div>
+          <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setLb({ open: false, src: "", alt: "" })}
+              style={{
+                position: "absolute",
+                top: "-14px",
+                right: "-14px",
+                background: T.bgCard,
+                border: `1px solid ${T.border}`,
+                borderRadius: "50%",
+                width: "28px",
+                height: "28px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: T.text,
+              }}
+            >
+              <X size={13} />
+            </button>
+
+            <img
+              src={lb.src}
+              alt={lb.alt}
+              style={{
+                maxWidth: "94vw",
+                maxHeight: "90vh",
+                borderRadius: "6px",
+                border: `1px solid ${T.border}`,
+              }}
+            />
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function ArticleCard({ doc, onGoDoc }) {
+  const [hov, setHov] = useState(false);
+  const m = ts(doc.team);
+  const shortDescription = String(doc.shortDescription || "").trim();
+
+  return (
+    <button
+      onClick={() => onGoDoc(doc.id)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        background: hov
+          ? "linear-gradient(180deg, rgba(12,16,24,1) 0%, rgba(9,13,21,1) 100%)"
+          : "linear-gradient(180deg, rgba(10,14,22,1) 0%, rgba(7,10,17,1) 100%)",
+        border: `1px solid ${hov ? m.border : T.border}`,
+        borderLeft: `3px solid ${hov ? m.color : m.border}`,
+        borderRadius: "12px",
+        padding: "26px 28px",
+        cursor: "pointer",
+        transition: "all 0.18s ease",
+        boxShadow: hov
+          ? m.glow
+          : "0 10px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.02)",
+        fontFamily: T.mono,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            hov && doc.team === "red"
+              ? "linear-gradient(90deg, rgba(255,58,92,0.06) 0%, transparent 18%)"
+              : hov && doc.team === "blue"
+                ? "linear-gradient(90deg, rgba(56,189,248,0.05) 0%, transparent 18%)"
+                : hov
+                  ? "linear-gradient(90deg, rgba(34,197,94,0.04) 0%, transparent 18%)"
+                  : "none",
+        }}
+      />
+
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "16px",
+            flexWrap: "wrap",
+            marginBottom: "18px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+              minWidth: 0,
+            }}
+          >
+            <m.Icon size={12} style={{ color: m.color }} />
+
+            <span
+              style={{
+                fontSize: "11px",
+                letterSpacing: "0.14em",
+                fontWeight: 700,
+                color: m.color,
+              }}
+            >
+              {m.label}
+            </span>
+
+            {doc.category && (
+              <>
+                <span style={{ color: T.textDim, fontSize: "10px" }}>·</span>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: T.textMuted,
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {doc.category}
+                </span>
+              </>
+            )}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              flexWrap: "wrap",
+            }}
+          >
+            {doc.difficulty && (
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: T.textMuted,
+                  background: "rgba(255,255,255,0.025)",
+                  border: `1px solid ${T.border}`,
+                  borderRadius: "6px",
+                  padding: "5px 10px",
+                }}
+              >
+                {doc.difficulty}
+              </span>
+            )}
+
+            {doc.updatedAt && (
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: T.textMuted,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                }}
+              >
+                <Clock size={11} style={{ opacity: 0.7 }} />
+                {doc.updatedAt}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div
+          style={{
+            color: hov ? T.textBright : "#d7deea",
+            fontWeight: 700,
+            fontSize: "17px",
+            lineHeight: "1.5",
+            marginBottom: shortDescription ? "12px" : "18px",
+            transition: "color 0.15s",
+            maxWidth: "1100px",
+          }}
+        >
+          {doc.title}
+        </div>
+
+        {shortDescription && (
+          <div
+            style={{
+              color: hov ? "#9db0c9" : T.textMuted,
+              fontSize: "13px",
+              lineHeight: "1.85",
+              marginBottom: "18px",
+              maxWidth: "980px",
+              transition: "color 0.15s",
+            }}
+          >
+            {shortDescription}
+          </div>
+        )}
+
+        <div
+          style={{
+            borderTop: `1px solid ${T.border}`,
+            paddingTop: "16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "14px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
+            {doc.tags?.slice(0, 6).map((tag) => (
+              <span
+                key={tag}
+                style={{
+                  fontSize: "10px",
+                  color: T.textMuted,
+                  background: "rgba(255,255,255,0.02)",
+                  border: `1px solid ${T.border}`,
+                  borderRadius: "6px",
+                  padding: "5px 10px",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div
+            style={{
+              fontSize: "12px",
+              color: hov ? T.textBright : T.textMuted,
+              letterSpacing: "0.05em",
+              transition: "color 0.15s",
+              whiteSpace: "nowrap",
+            }}
+          >
+            read note →
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function HomeView({ docs, onGoDoc }) {
+  const [filter, setFilter] = useState("all");
+
+  const nonPinned = useMemo(() => docs.filter((d) => !PINNED_SET.has(d.id)), [docs]);
+
+  const platforms = useMemo(() => {
+    const s = new Set();
+    nonPinned.forEach((d) => {
+      if (d.nav?.root && d.nav.root !== "general") s.add(d.nav.root);
+    });
+    return Array.from(s).sort();
+  }, [nonPinned]);
+
+  const filters = [
+    { key: "all", label: "ALL" },
+    { key: "red", label: "RED" },
+    { key: "blue", label: "BLUE" },
+    ...platforms.map((p) => ({ key: p, label: p.toUpperCase() })),
+  ];
+
+  const visible = useMemo(() => {
+    const all = [...nonPinned].sort(sortByDateDesc);
+
+    if (filter === "all") return all;
+    if (filter === "red" || filter === "blue") {
+      return all.filter((d) => d.team === filter);
+    }
+
+    return all.filter(
+      (d) => d.nav?.root === filter || d.category?.toLowerCase() === filter
+    );
+  }, [nonPinned, filter]);
+
+  const stats = useMemo(
+    () => ({
+      total: nonPinned.length,
+      red: nonPinned.filter((d) => d.team === "red").length,
+      blue: nonPinned.filter((d) => d.team === "blue").length,
+    }),
+    [nonPinned]
+  );
+
+  return (
+    <div style={{ minHeight: "100%", background: T.bg, fontFamily: T.mono }}>
+      <div
+        style={{
+          padding: "48px 36px 34px",
+          borderBottom: `1px solid ${T.border}`,
+          background:
+            "linear-gradient(180deg, rgba(56,189,248,0.03) 0%, rgba(255,58,92,0.02) 35%, transparent 75%)",
+        }}
+      >
+        <div style={{ maxWidth: "1180px", margin: "0 auto" }}>
+          <div
+            style={{
+              color: T.textMuted,
+              fontSize: "11px",
+              marginBottom: "10px",
+              letterSpacing: "0.06em",
+            }}
+          >
+            <span style={{ color: T.gen }}>$</span>{" "}
+            <span style={{ color: T.textMuted }}>cat /field-manual/feed.md</span>
+          </div>
+
+          <h1
+            style={{
+              color: T.textBright,
+              fontSize: "28px",
+              fontWeight: 700,
+              margin: "0 0 10px",
+              fontFamily: T.mono,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Red/Blue Field Manual
+          </h1>
+
+          <p
+            style={{
+              color: T.textMuted,
+              fontSize: "13px",
+              margin: "0 0 30px",
+              maxWidth: "760px",
+              lineHeight: "1.7",
+            }}
+          >
+            Offensive &amp; defensive security notes — web application security, pentest
+            workflow, CTF writeups, eJPT prep, mindset i praktyczne case-study.
+          </p>
+
+          <div style={{ display: "flex", gap: "36px", flexWrap: "wrap" }}>
+            {[
+              { label: "dokumenty", val: stats.total, color: T.textBright },
+              { label: "red team", val: stats.red, color: T.red },
+              { label: "blue team", val: stats.blue, color: T.blue },
+            ].map((s2) => (
+              <div
+                key={s2.label}
+                style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+              >
+                <span
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: 700,
+                    color: s2.color,
+                    fontFamily: T.mono,
+                  }}
+                >
+                  {s2.val}
+                </span>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    color: T.textMuted,
+                    letterSpacing: "0.12em",
+                  }}
+                >
+                  {s2.label.toUpperCase()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          padding: "16px 36px",
+          borderBottom: `1px solid ${T.border}`,
+          display: "flex",
+          gap: "8px",
+          flexWrap: "wrap",
+          maxWidth: "1180px",
+          margin: "0 auto",
+        }}
+      >
+        {filters.map((f) => {
+          const active = filter === f.key;
+          const accent = f.key === "red" ? T.red : f.key === "blue" ? T.blue : T.gen;
+
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "10px",
+                letterSpacing: "0.1em",
+                fontFamily: T.mono,
+                cursor: "pointer",
+                fontWeight: 600,
+                transition: "all 0.12s",
+                border: `1px solid ${
+                  active
+                    ? f.key === "red"
+                      ? T.redBorder
+                      : f.key === "blue"
+                        ? T.blueBorder
+                        : T.borderHover
+                    : T.border
+                }`,
+                background: active
+                  ? f.key === "red"
+                    ? T.redDim
+                    : f.key === "blue"
+                      ? T.blueDim
+                      : "rgba(255,255,255,0.04)"
+                  : "transparent",
+                color: active
+                  ? ["red", "blue"].includes(f.key)
+                    ? accent
+                    : T.textBright
+                  : T.textMuted,
+              }}
+            >
+              {f.label}
+            </button>
+          );
+        })}
+
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: "11px",
+            color: T.textMuted,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          {visible.length} result{visible.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <div style={{ padding: "30px 36px 52px", maxWidth: "1180px", margin: "0 auto" }}>
+        {visible.length === 0 ? (
+          <div
+            style={{
+              color: T.textMuted,
+              fontSize: "13px",
+              padding: "48px 0",
+              textAlign: "center",
+            }}
+          >
+            <span style={{ color: T.gen }}>$</span> find . -name "*.md"{" "}
+            <span style={{ color: T.red }}>→ 0 results</span>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "18px",
+            }}
+          >
+            {visible.map((doc) => (
+              <ArticleCard key={doc.id} doc={doc} onGoDoc={onGoDoc} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DocButton({ item, isActive, onGoDoc }) {
+  const [hov, setHov] = useState(false);
+  const m = ts(item.team);
+
+  return (
+    <button
+      onClick={() => onGoDoc(item.id)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: "100%",
+        textAlign: "left",
+        display: "block",
+        padding: "7px 10px",
+        borderRadius: "4px",
+        cursor: "pointer",
+        background: isActive
+          ? "rgba(255,255,255,0.04)"
+          : hov
+            ? "rgba(255,255,255,0.025)"
+            : "transparent",
+        borderLeft: `2px solid ${isActive ? m.color : hov ? m.border : "transparent"}`,
+        border: "none",
+        outline: "none",
+        boxShadow: isActive
+          ? `inset 0 0 0 0 transparent, -2px 0 8px ${m.color}22`
+          : "none",
+        fontFamily: T.mono,
+        transition: "all 0.12s",
+      }}
+    >
+      <div
+        style={{
+          color: isActive ? T.textBright : hov ? T.text : "#6b7e96",
+          fontSize: "12px",
+          lineHeight: "1.35",
+          marginBottom: item.tags?.length ? "4px" : 0,
+          transition: "color 0.12s",
+        }}
+      >
+        {isActive && (
+          <span style={{ color: m.color, marginRight: "5px", fontSize: "10px" }}>›</span>
+        )}
+        {item.title}
+      </div>
+
+      {item.tags?.length ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
+          {item.tags.slice(0, 2).map((tag) => (
+            <span
+              key={tag}
+              style={{ fontSize: "9px", color: T.textMuted, letterSpacing: "0.04em" }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </button>
   );
 }
 
@@ -387,31 +1220,44 @@ export default function SecurityGuidebook() {
   const safeLang = lang === "en" ? "en" : "pl";
   const t = UI[safeLang];
   const isDesktop = useIsDesktop();
+  const isHome = !id || id === "home";
 
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.matchMedia("(min-width: 1024px)").matches;
-  });
+  useEffect(() => {
+    const fid = "jb-mono-font";
+    if (document.getElementById(fid)) return;
+
+    const lk = document.createElement("link");
+    lk.id = fid;
+    lk.rel = "stylesheet";
+    lk.href =
+      "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap";
+    document.head.appendChild(lk);
+  }, []);
+
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(min-width: 1024px)").matches
+      : true
+  );
 
   const [query, setQuery] = useState("");
-  const [theme, setTheme] = useState(() => getStoredTheme());
-  const [openSections, setOpenSections] = useState(() => ({}));
-  const [openGroups, setOpenGroups] = useState(() => ({}));
+  const [openSections, setOpenSections] = useState({});
+  const [openGroups, setOpenGroups] = useState({});
 
   const isSearching = Boolean(query.trim());
+  const sidebarOpenEffective = isDesktop ? true : sidebarOpen;
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    setStoredTheme(theme);
-  }, [theme]);
+    document.documentElement.style.colorScheme = "dark";
+    document.body.style.background = T.bg;
+  }, []);
 
-  const sidebarOpenEffective = isDesktop ? true : sidebarOpen;
   useEffect(() => {
     if (isDesktop) return;
-    const prev = document.body.style.overflow;
+    const p = document.body.style.overflow;
     if (sidebarOpenEffective) document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = p;
     };
   }, [sidebarOpenEffective, isDesktop]);
 
@@ -424,6 +1270,7 @@ export default function SecurityGuidebook() {
           el.focus();
         }
       }
+
       if (e.key === "Escape") {
         const el = document.getElementById("kb-search");
         if (el && document.activeElement === el) el.blur();
@@ -431,30 +1278,35 @@ export default function SecurityGuidebook() {
         setExportOpen(false);
       }
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isDesktop, sidebarOpen]);
+  }, [isDesktop, sidebarOpenEffective]);
 
   useEffect(() => {
     if (!exportOpen) return;
-    const handler = (e) => {
+
+    const h = (e) => {
       if (exportRef.current && !exportRef.current.contains(e.target)) {
         setExportOpen(false);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, [exportOpen]);
 
   const { map, canon } = useMemo(() => loadContentBilingual(), []);
 
   const sidebarItems = useMemo(() => {
     const items = [];
+
     for (const base of canon) {
       const pair = map.get(base.id);
-      const localized = pair ? pair[safeLang] || pair.pl || pair.en : base;
-      items.push(localized);
+      const loc = pair ? pair[safeLang] || pair.pl || pair.en : base;
+      items.push(loc);
     }
+
     return items;
   }, [canon, map, safeLang]);
 
@@ -463,10 +1315,16 @@ export default function SecurityGuidebook() {
   const isFallback = pair ? !pair[safeLang] : false;
 
   useEffect(() => {
-    if (!doc && canon?.[0]) {
-      navigate(`/${safeLang}/doc/${canon[0].id}`, { replace: true });
+    if (!id && canon?.length) {
+      navigate(`/${safeLang}/doc/home`, { replace: true });
     }
-  }, [doc, canon, safeLang, navigate]);
+  }, [id, canon, navigate, safeLang]);
+
+  useEffect(() => {
+    if (id && id !== "home" && !doc && canon?.length) {
+      navigate(`/${safeLang}/doc/home`, { replace: true });
+    }
+  }, [doc, canon, safeLang, navigate, id]);
 
   const fuse = useMemo(
     () =>
@@ -476,10 +1334,11 @@ export default function SecurityGuidebook() {
       }),
     [sidebarItems]
   );
-  const filtered = useMemo(() => {
-    if (!query.trim()) return sidebarItems;
-    return fuse.search(query).map((r) => r.item);
-  }, [query, fuse, sidebarItems]);
+
+  const filtered = useMemo(
+    () => (query.trim() ? fuse.search(query).map((r) => r.item) : sidebarItems),
+    [query, fuse, sidebarItems]
+  );
 
   const { sectionsList, pathByDocId, pinned } = useMemo(() => {
     const secMap = new Map();
@@ -504,6 +1363,7 @@ export default function SecurityGuidebook() {
     const ensureSub = (sec, subLabel) => {
       const subKey = subLabel || "__root__";
       const groupKey = `${sec.key}::sub::${subKey}`;
+
       if (!sec.subs.has(subKey)) {
         sec.subs.set(subKey, {
           key: groupKey,
@@ -513,6 +1373,7 @@ export default function SecurityGuidebook() {
           countOverride: null,
         });
       }
+
       return sec.subs.get(subKey);
     };
 
@@ -523,19 +1384,19 @@ export default function SecurityGuidebook() {
       }
 
       const nav = d.nav || null;
-      const isPortSwigger = nav?.root === "portswigger";
-      const isTryHackMe = nav?.root === "tryhackme";
-      const isWriteup = Boolean(nav?.isWriteup);
+      const isPS = nav?.root === "portswigger";
+      const isTHM = nav?.root === "tryhackme";
+      const isWU = Boolean(nav?.isWriteup);
 
       let sectionLabel = d.category || "General";
       let subLabel = "";
 
-      if (isPortSwigger) {
+      if (isPS) {
         sectionLabel = "PortSwigger";
-        subLabel = isWriteup ? "Writeups" : "Knowledge base";
-      } else if (isTryHackMe) {
+        subLabel = isWU ? "Writeups" : "Knowledge base";
+      } else if (isTHM) {
         sectionLabel = "TryHackMe";
-        subLabel = isWriteup ? "Writeups" : "Rooms";
+        subLabel = isWU ? "Writeups" : "Rooms";
       } else if (nav?.root && nav.root !== "general") {
         sectionLabel = titleize(nav.root);
         subLabel = d.category || "";
@@ -547,10 +1408,11 @@ export default function SecurityGuidebook() {
       const secKey = `${d.team}::${sectionLabel}`;
       const sec = ensureSection(secKey, { team: d.team, sectionLabel });
 
-      if (isPortSwigger && isWriteup) {
+      if (isPS && isWU) {
         sec.platform = "portswigger";
         const sub = ensureSub(sec, "Writeups");
         sub.kind = "portswigger-writeups";
+
         if (!sec.writeups) sec.writeups = { topics: new Map() };
 
         const topicRaw = (d.chapter || d.nav?.topic || d.category || "misc").trim();
@@ -564,9 +1426,11 @@ export default function SecurityGuidebook() {
             diffs: new Map(),
           });
         }
+
         const topic = sec.writeups.topics.get(topicKey);
         const diffKey = normalizeDifficulty(d.difficulty);
         const diffGroupKey = `${topicKey}::diff::${diffKey}`;
+
         if (!topic.diffs.has(diffKey)) {
           topic.diffs.set(diffKey, {
             key: diffGroupKey,
@@ -575,21 +1439,25 @@ export default function SecurityGuidebook() {
             items: [],
           });
         }
+
         topic.diffs.get(diffKey).items.push(d);
         sub.countOverride = (sub.countOverride ?? 0) + 1;
+
         path.set(d.id, {
           secKey,
           subKey: sub.key,
           parentKey: topicKey,
           groupKey: diffGroupKey,
         });
+
         continue;
       }
 
-      if (isTryHackMe && isWriteup) {
+      if (isTHM && isWU) {
         sec.platform = "tryhackme";
         const diffKey = normalizeDifficulty(d.difficulty);
         const groupKey = `${secKey}::diff::${diffKey}`;
+
         if (!sec.groups.has(diffKey)) {
           sec.groups.set(diffKey, {
             key: groupKey,
@@ -598,6 +1466,7 @@ export default function SecurityGuidebook() {
             items: [],
           });
         }
+
         sec.groups.get(diffKey).items.push(d);
         path.set(d.id, { secKey, groupKey });
         continue;
@@ -609,34 +1478,44 @@ export default function SecurityGuidebook() {
     }
 
     const order = { neutral: 0, blue: 1, red: 2 };
+
     const out = Array.from(secMap.values()).sort((a, b) => {
-      const t = (order[a.team] ?? 9) - (order[b.team] ?? 9);
-      if (t !== 0) return t;
-      return a.sectionLabel.localeCompare(b.sectionLabel);
+      const t2 = (order[a.team] ?? 9) - (order[b.team] ?? 9);
+      return t2 !== 0 ? t2 : a.sectionLabel.localeCompare(b.sectionLabel);
     });
 
     for (const sec of out) {
-      const subsArr = Array.from(sec.subs.values());
-      subsArr.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+      const subsArr = Array.from(sec.subs.values()).sort((a, b) =>
+        (a.label || "").localeCompare(b.label || "")
+      );
+
       for (const sub of subsArr) {
         if (sub.kind === "docs") sub.items.sort(sortDocsByDateAscThenTitle);
       }
+
       sec.subsArr = subsArr;
 
-      const groupsArr = Array.from(sec.groups.values());
-      groupsArr.sort((a, b) => sortByDifficulty(sec.platform, a.raw, b.raw));
+      const groupsArr = Array.from(sec.groups.values()).sort((a, b) =>
+        sortByDifficulty(sec.platform, a.raw, b.raw)
+      );
+
       for (const g of groupsArr) g.items.sort(sortDocsByDateAscThenTitle);
       sec.groupsArr = groupsArr;
 
       if (sec.writeups?.topics) {
-        const topicsArr = Array.from(sec.writeups.topics.values());
-        topicsArr.sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+        const topicsArr = Array.from(sec.writeups.topics.values()).sort((a, b) =>
+          (a.label || "").localeCompare(b.label || "")
+        );
+
         for (const topic of topicsArr) {
-          const diffsArr = Array.from(topic.diffs.values());
-          diffsArr.sort((a, b) => sortByDifficulty("portswigger", a.raw, b.raw));
+          const diffsArr = Array.from(topic.diffs.values()).sort((a, b) =>
+            sortByDifficulty("portswigger", a.raw, b.raw)
+          );
+
           for (const g of diffsArr) g.items.sort(sortDocsByDateAscThenTitle);
           topic.diffsArr = diffsArr;
         }
+
         sec.writeups.topicsArr = topicsArr;
       }
     }
@@ -650,32 +1529,34 @@ export default function SecurityGuidebook() {
     return { sectionsList: out, pathByDocId: path, pinned: pinnedDocs };
   }, [filtered]);
 
-  const docId = doc?.id ?? null;
-  const activePath = docId ? pathByDocId.get(docId) || null : null;
+  const activePath = doc?.id ? pathByDocId.get(doc.id) || null : null;
 
   useEffect(() => {
     if (!activePath?.secKey) return;
+
     const raf = requestAnimationFrame(() => {
-      setOpenSections((prev) => {
-        if (prev[activePath.secKey] !== undefined) return prev;
-        return { ...prev, [activePath.secKey]: true };
-      });
+      setOpenSections((prev) =>
+        activePath.secKey in prev ? prev : { ...prev, [activePath.secKey]: true }
+      );
+
       setOpenGroups((prev) => {
         let next = prev;
-        const want = [
+
+        for (const k of [
           activePath.subKey,
           activePath.parentKey,
           activePath.groupKey,
-        ].filter(Boolean);
-        for (const k of want) {
-          if (next[k] === undefined) {
+        ].filter(Boolean)) {
+          if (!(k in next)) {
             next = next === prev ? { ...prev } : next;
             next[k] = true;
           }
         }
+
         return next;
       });
     });
+
     return () => cancelAnimationFrame(raf);
   }, [
     activePath?.secKey,
@@ -683,53 +1564,81 @@ export default function SecurityGuidebook() {
     activePath?.parentKey,
     activePath?.groupKey,
   ]);
+
   const canonSortedByDate = useMemo(
     () => [...canon].sort(sortDocsByDateAscThenTitle),
     [canon]
   );
+
   const docIndex = useMemo(
     () => canonSortedByDate.findIndex((d) => d.id === (doc?.id ?? "")),
     [canonSortedByDate, doc]
   );
+
   const prevDoc = docIndex > 0 ? canonSortedByDate[docIndex - 1] : null;
   const nextDoc =
     docIndex >= 0 && docIndex < canonSortedByDate.length - 1
       ? canonSortedByDate[docIndex + 1]
       : null;
-  const onSwitchLang = () => {
-    const next = safeLang === "pl" ? "en" : "pl";
-    navigate(`/${next}/doc/${id}`, { replace: false });
-    if (!isDesktop) setSidebarOpen(false);
-  };
 
-  const onGoDoc = (docId2) => {
-    navigate(`/${safeLang}/doc/${docId2}`);
-    const root = mainRef.current;
-    if (root) root.scrollTo({ top: 0, behavior: "auto" });
+  const onSwitchLang = useCallback(() => {
+    navigate(`/${safeLang === "pl" ? "en" : "pl"}/doc/${id || "home"}`, {
+      replace: false,
+    });
     if (!isDesktop) setSidebarOpen(false);
-  };
+  }, [navigate, safeLang, id, isDesktop]);
 
-  const toggleSection = (secKey) =>
-    setOpenSections((prev) => ({ ...prev, [secKey]: !prev[secKey] }));
-  const toggleGroup = (groupKey) =>
-    setOpenGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
+  const onGoDoc = useCallback(
+    (docId2) => {
+      navigate(`/${safeLang}/doc/${docId2}`);
+
+      if (mainRef.current) {
+        mainRef.current.scrollTo({ top: 0, behavior: "auto" });
+      }
+
+      if (!isDesktop) setSidebarOpen(false);
+    },
+    [navigate, safeLang, isDesktop]
+  );
+
+  const toggleSection = useCallback((k) => {
+    setOpenSections((p) => ({ ...p, [k]: !p[k] }));
+  }, []);
+
+  const toggleGroup = useCallback((k) => {
+    setOpenGroups((p) => ({ ...p, [k]: !p[k] }));
+  }, []);
+
+  const handleExportPdf = useCallback(() => {
+    if (!doc) return;
+    exportAsPDF(doc, articleRef);
+    setExportOpen(false);
+  }, [doc]);
+
+  const handleExportMd = useCallback(() => {
+    if (!doc) return;
+    exportAsMD(doc);
+    setExportOpen(false);
+  }, [doc]);
 
   const editUrl = doc ? `${SITE.repoUrl}/blob/main/${doc.sourcePath}` : SITE.repoUrl;
-  const meta = teamMeta(doc?.team);
+  const docMeta = ts(doc?.team);
 
   useEffect(() => {
-    if (!doc) return;
+    if (!doc || isHome) return;
+
     const raf = requestAnimationFrame(() => {
       const article = articleRef.current;
+
       if (!article) {
         setTocItems([]);
         setActiveTocId(null);
         return;
       }
 
-      const headings = Array.from(article.querySelectorAll("h1, h2, h3, h4"));
+      const headings = Array.from(article.querySelectorAll("h1,h2,h3,h4"));
 
-      if (headings.length === 0) {
+      if (!headings.length) {
         try {
           setTocItems(buildToc(doc.content) || []);
         } catch {
@@ -742,25 +1651,22 @@ export default function SecurityGuidebook() {
       const items = headings
         .map((el) => {
           const text = (el.textContent || "").trim();
-          if (!text) return null;
           const hid = el.getAttribute("id");
-          if (!hid) return null;
-          return { id: hid, text };
+          return text && hid ? { id: hid, text } : null;
         })
         .filter(Boolean);
 
       setTocItems(items);
       setActiveTocId(items[0]?.id ?? null);
     });
+
     return () => cancelAnimationFrame(raf);
-  }, [doc?.id, doc?.content]);
+  }, [doc?.id, doc?.content, isHome]);
 
   useEffect(() => {
     const root = mainRef.current;
     const article = articleRef.current;
-    if (!root || !article || tocItems.length === 0) return;
-
-    const HEADER_OFFSET = 100;
+    if (!root || !article || !tocItems.length) return;
 
     const onScroll = () => {
       const targets = tocItems
@@ -772,14 +1678,11 @@ export default function SecurityGuidebook() {
 
       if (!targets.length) return;
 
-      const rootTop = root.getBoundingClientRect().top;
-      const threshold = rootTop + HEADER_OFFSET;
-
+      const threshold = root.getBoundingClientRect().top + 100;
       let active = targets[0].id;
-      for (const { id, el } of targets) {
-        if (el.getBoundingClientRect().top <= threshold) {
-          active = id;
-        }
+
+      for (const { id: tid, el } of targets) {
+        if (el.getBoundingClientRect().top <= threshold) active = tid;
       }
 
       setActiveTocId(active);
@@ -791,521 +1694,750 @@ export default function SecurityGuidebook() {
     return () => root.removeEventListener("scroll", onScroll);
   }, [tocItems, doc?.id]);
 
-  const scrollToHeading = (headingId) => {
+  const scrollToHeading = useCallback((hid) => {
     const root = mainRef.current;
     const article = articleRef.current;
     if (!root || !article) return;
 
-    const el = article.querySelector(`#${CSS.escape(headingId)}`);
+    const el = article.querySelector(`#${CSS.escape(hid)}`);
     if (!el) return;
 
-    const HEADER_OFFSET = 96;
-    const rootRect = root.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    const top = elRect.top - rootRect.top + root.scrollTop - HEADER_OFFSET;
+    const top =
+      el.getBoundingClientRect().top -
+      root.getBoundingClientRect().top +
+      root.scrollTop -
+      96;
 
     root.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-  };
+  }, []);
 
-  if (!doc) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-slate-50 text-slate-900">
-        <div className="max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-lg font-semibold">Brak dokumentów do wyświetlenia</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Loader nie widzi markdownów w{" "}
-            <code className="px-1 py-0.5 bg-slate-100 rounded">/content</code>.
-          </p>
-          <p className="mt-2 text-sm text-slate-600">
-            Sprawdź, czy masz pliki np.{" "}
-            <code className="px-1 py-0.5 bg-slate-100 rounded">
-              content/pl/manifesto.md
-            </code>
-            .
-          </p>
-        </div>
+  const renderDocList = (items) =>
+    items.map((item) => (
+      <DocButton
+        key={item.id}
+        item={item}
+        isActive={item.id === doc?.id}
+        onGoDoc={onGoDoc}
+      />
+    ));
+
+  const GroupToggle = ({ label, count, isOpen, onToggle, indentLevel = 0 }) => (
+    <button
+      onClick={onToggle}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: `6px ${8 + indentLevel * 8}px`,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        fontFamily: T.mono,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
+        <ChevronRight
+          size={12}
+          style={{
+            color: T.textMuted,
+            transition: "transform 0.15s",
+            transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{
+            fontSize: "11px",
+            color: isOpen ? T.text : T.textMuted,
+            fontWeight: isOpen ? 500 : 400,
+            transition: "color 0.12s",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {label}
+        </span>
       </div>
-    );
-  }
+
+      <span
+        style={{
+          fontSize: "10px",
+          color: T.textMuted,
+          flexShrink: 0,
+          marginLeft: "6px",
+        }}
+      >
+        {count}
+      </span>
+    </button>
+  );
+
+  const sidebarBg = T.bgSidebar;
 
   return (
-    <div className="h-dvh w-full bg-white text-slate-900 dark:bg-[#0b0f17] dark:text-slate-100">
-      <div className="relative flex h-full">
-        {!isDesktop && sidebarOpenEffective && (
-          <button
-            type="button"
-            aria-label="Close sidebar overlay"
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
-          />
-        )}
+    <div
+      style={{
+        height: "100dvh",
+        width: "100%",
+        background: T.bg,
+        color: T.textBright,
+        fontFamily: T.mono,
+        display: "flex",
+      }}
+    >
+      {!isDesktop && sidebarOpenEffective && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 30,
+            background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(4px)",
+          }}
+        />
+      )}
 
-        <aside
-          className={cx(
-            "fixed inset-y-0 left-0 z-40 w-80 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0a0e16]",
-            "transform transition-transform duration-200 ease-out will-change-transform",
-            sidebarOpenEffective ? "translate-x-0" : "-translate-x-full",
-            "lg:static lg:translate-x-0 lg:z-auto lg:shrink-0"
-          )}
+      <aside
+        style={{
+          position: isDesktop ? "static" : "fixed",
+          inset: isDesktop ? "auto" : "0 auto 0 0",
+          zIndex: isDesktop ? "auto" : 40,
+          width: "272px",
+          flexShrink: 0,
+          background: sidebarBg,
+          borderRight: `1px solid ${T.border}`,
+          display: "flex",
+          flexDirection: "column",
+          height: "100dvh",
+          transform: sidebarOpenEffective ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.2s ease",
+        }}
+      >
+        <div
+          style={{
+            padding: "16px 16px 12px",
+            borderBottom: `1px solid ${T.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexShrink: 0,
+          }}
         >
-          <div className="h-full flex flex-col">
-            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-900 flex items-center justify-between">
-              <button
-                onClick={() => onGoDoc("manifesto")}
-                className="flex items-center gap-2 text-left min-w-0"
-                type="button"
+          <button
+            onClick={() => onGoDoc("home")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "6px",
+                border: `1px solid ${T.border}`,
+                background: T.bgCard,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Terminal size={15} style={{ color: T.gen }} />
+            </div>
+
+            <div style={{ textAlign: "left", minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: T.textBright,
+                  fontFamily: T.mono,
+                }}
               >
-                <div className="h-9 w-9 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center dark:border-slate-800 dark:bg-slate-900">
-                  <BookOpen size={18} className="text-slate-700 dark:text-slate-200" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold leading-tight truncate">
-                    {SITE.name}
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                    by {SITE.authorLabel}
-                  </div>
-                </div>
-              </button>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden rounded-md p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900"
-                type="button"
-                aria-label="Close menu"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-4 space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                <input
-                  id="kb-search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t.search}
-                  className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:focus:ring-slate-800"
-                />
+                field-manual
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={onSwitchLang}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
-                  type="button"
-                >
-                  {safeLang === "pl" ? "EN" : "PL"}
-                </button>
-                <button
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
-                  type="button"
-                >
-                  {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-                  {theme === "dark" ? "Light" : "Dark"}
-                </button>
-                <a
-                  href={SITE.repoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
-                >
-                  <Github size={14} /> Repo
-                </a>
+              <div style={{ fontSize: "10px", color: T.textMuted }}>
+                by {SITE.authorLabel}
               </div>
             </div>
+          </button>
 
-            <nav className="flex-1 overflow-y-auto px-3 pb-6">
-              {pinned?.length ? (
-                <div className="mb-6">
-                  <div className="px-2 mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    {t.start}
-                  </div>
-                  <div className="space-y-1">
-                    {pinned.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => onGoDoc(item.id)}
-                        className={cx(
-                          "w-full text-left rounded-lg px-3 py-2 border text-sm",
-                          item.id === doc.id
-                            ? "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-[#0f1624]"
-                            : "border-transparent hover:border-slate-200 hover:bg-slate-50 dark:hover:border-slate-700 dark:hover:bg-[#0f1624]/60"
-                        )}
-                        type="button"
-                      >
-                        <div className="truncate">{item.title}</div>
-                        <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                          {item.tags?.length ? item.tags.join(" • ") : ""}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+          {!isDesktop && (
+            <button
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: T.textMuted,
+                padding: "4px",
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
-              {sectionsList.map((sec) => {
-                const gm = teamMeta(sec.team);
-                const secIsOpen = isSearching ? true : Boolean(openSections[sec.key]);
+        <div style={{ padding: "12px 12px 8px", flexShrink: 0 }}>
+          <div style={{ position: "relative", marginBottom: "10px" }}>
+            <Search
+              size={13}
+              style={{
+                position: "absolute",
+                left: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: T.textMuted,
+                pointerEvents: "none",
+              }}
+            />
 
-                return (
-                  <div key={sec.key} className="mb-6">
-                    <button
-                      onClick={() => toggleSection(sec.key)}
-                      className="w-full px-2 mb-2 flex items-center justify-between rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1624]/60"
-                      type="button"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <ChevronRight
-                          className={cx(
-                            "h-4 w-4 text-slate-400 transition-transform",
-                            secIsOpen ? "rotate-90" : "rotate-0"
-                          )}
-                        />
-                        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">
-                          {sec.sectionLabel}
-                        </div>
-                      </div>
-                      <span
-                        className={cx(
-                          "rounded-full border px-2 py-0.5 text-[10px] shrink-0",
-                          gm.chip
-                        )}
-                      >
-                        {gm.label}
-                      </span>
-                    </button>
-
-                    {secIsOpen && (
-                      <div className="space-y-3">
-                        {sec.subsArr?.length ? (
-                          <div className="space-y-3">
-                            {sec.subsArr.map((sub) => {
-                              const subIsOpen = isSearching
-                                ? true
-                                : Boolean(openGroups[sub.key]);
-                              const isPsWriteups = sub.kind === "portswigger-writeups";
-                              return (
-                                <div key={sub.key}>
-                                  {sub.label ? (
-                                    <button
-                                      onClick={() => toggleGroup(sub.key)}
-                                      className="w-full px-2 py-1 flex items-center justify-between rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1624]/60"
-                                      type="button"
-                                    >
-                                      <div className="flex items-center gap-2 min-w-0">
-                                        <ChevronRight
-                                          className={cx(
-                                            "h-4 w-4 text-slate-400 transition-transform",
-                                            subIsOpen ? "rotate-90" : "rotate-0"
-                                          )}
-                                        />
-                                        <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
-                                          {sub.label}
-                                        </div>
-                                      </div>
-                                      <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">
-                                        {sub.countOverride ?? sub.items.length}
-                                      </span>
-                                    </button>
-                                  ) : null}
-
-                                  {(sub.label ? subIsOpen : true) && (
-                                    <div
-                                      className={cx(
-                                        "space-y-1",
-                                        sub.label ? "pl-6 mt-1" : ""
-                                      )}
-                                    >
-                                      {!isPsWriteups &&
-                                        sub.items.map((item) => (
-                                          <button
-                                            key={item.id}
-                                            onClick={() => onGoDoc(item.id)}
-                                            className={cx(
-                                              "w-full text-left rounded-lg px-3 py-2 border text-sm",
-                                              item.id === doc.id
-                                                ? "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-[#0f1624]"
-                                                : "border-transparent hover:border-slate-200 hover:bg-slate-50 dark:hover:border-slate-700 dark:hover:bg-[#0f1624]/60"
-                                            )}
-                                            type="button"
-                                          >
-                                            <div className="truncate">{item.title}</div>
-                                            <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                                              {item.tags?.length
-                                                ? item.tags.join(" • ")
-                                                : ""}
-                                            </div>
-                                          </button>
-                                        ))}
-
-                                      {isPsWriteups && sec.writeups?.topicsArr?.length ? (
-                                        <div className="space-y-2">
-                                          {sec.writeups.topicsArr.map((topic) => {
-                                            const topicIsOpen = isSearching
-                                              ? true
-                                              : Boolean(openGroups[topic.key]);
-                                            return (
-                                              <div key={topic.key}>
-                                                <button
-                                                  onClick={() => toggleGroup(topic.key)}
-                                                  className="w-full px-2 py-1 flex items-center justify-between rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1624]/60"
-                                                  type="button"
-                                                >
-                                                  <div className="flex items-center gap-2 min-w-0">
-                                                    <ChevronRight
-                                                      className={cx(
-                                                        "h-4 w-4 text-slate-400 transition-transform",
-                                                        topicIsOpen
-                                                          ? "rotate-90"
-                                                          : "rotate-0"
-                                                      )}
-                                                    />
-                                                    <div className="text-[12px] font-medium text-slate-600 dark:text-slate-300 truncate">
-                                                      {topic.label}
-                                                    </div>
-                                                  </div>
-                                                </button>
-                                                {topicIsOpen && (
-                                                  <div className="mt-1 space-y-2 pl-6">
-                                                    {topic.diffsArr?.map((g) => {
-                                                      const gIsOpen = isSearching
-                                                        ? true
-                                                        : Boolean(openGroups[g.key]);
-                                                      return (
-                                                        <div key={g.key}>
-                                                          <button
-                                                            onClick={() =>
-                                                              toggleGroup(g.key)
-                                                            }
-                                                            className="w-full px-2 py-1 flex items-center justify-between rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1624]/60"
-                                                            type="button"
-                                                          >
-                                                            <div className="flex items-center gap-2 min-w-0">
-                                                              <ChevronRight
-                                                                className={cx(
-                                                                  "h-4 w-4 text-slate-400 transition-transform",
-                                                                  gIsOpen
-                                                                    ? "rotate-90"
-                                                                    : "rotate-0"
-                                                                )}
-                                                              />
-                                                              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
-                                                                {g.label}
-                                                              </div>
-                                                            </div>
-                                                            <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">
-                                                              {g.items.length}
-                                                            </span>
-                                                          </button>
-                                                          {gIsOpen && (
-                                                            <div className="mt-1 space-y-1 pl-6">
-                                                              {g.items.map((item) => (
-                                                                <button
-                                                                  key={item.id}
-                                                                  onClick={() =>
-                                                                    onGoDoc(item.id)
-                                                                  }
-                                                                  className={cx(
-                                                                    "w-full text-left rounded-lg px-3 py-2 border text-sm",
-                                                                    item.id === doc.id
-                                                                      ? "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-[#0f1624]"
-                                                                      : "border-transparent hover:border-slate-200 hover:bg-slate-50 dark:hover:border-slate-700 dark:hover:bg-[#0f1624]/60"
-                                                                  )}
-                                                                  type="button"
-                                                                >
-                                                                  <div className="truncate">
-                                                                    {item.title}
-                                                                  </div>
-                                                                  <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                                                                    {item.tags?.length
-                                                                      ? item.tags.join(
-                                                                          " • "
-                                                                        )
-                                                                      : ""}
-                                                                  </div>
-                                                                </button>
-                                                              ))}
-                                                            </div>
-                                                          )}
-                                                        </div>
-                                                      );
-                                                    })}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      ) : null}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-
-                        {sec.groupsArr?.length ? (
-                          <div className="space-y-2">
-                            {sec.groupsArr.map((g) => {
-                              const gIsOpen = isSearching
-                                ? true
-                                : Boolean(openGroups[g.key]);
-                              return (
-                                <div key={g.key}>
-                                  <button
-                                    onClick={() => toggleGroup(g.key)}
-                                    className="w-full px-2 py-1 flex items-center justify-between rounded-lg hover:bg-slate-50 dark:hover:bg-[#0f1624]/60"
-                                    type="button"
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <ChevronRight
-                                        className={cx(
-                                          "h-4 w-4 text-slate-400 transition-transform",
-                                          gIsOpen ? "rotate-90" : "rotate-0"
-                                        )}
-                                      />
-                                      <div className="text-[12px] font-medium text-slate-600 dark:text-slate-300 truncate">
-                                        {g.label}
-                                      </div>
-                                    </div>
-                                    <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">
-                                      {g.items.length}
-                                    </span>
-                                  </button>
-                                  {gIsOpen && (
-                                    <div className="mt-1 space-y-1 pl-6">
-                                      {g.items.map((item) => (
-                                        <button
-                                          key={item.id}
-                                          onClick={() => onGoDoc(item.id)}
-                                          className={cx(
-                                            "w-full text-left rounded-lg px-3 py-2 border text-sm",
-                                            item.id === doc.id
-                                              ? "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-[#0f1624]"
-                                              : "border-transparent hover:border-slate-200 hover:bg-slate-50 dark:hover:border-slate-700 dark:hover:bg-[#0f1624]/60"
-                                          )}
-                                          type="button"
-                                        >
-                                          <div className="truncate">{item.title}</div>
-                                          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                                            {item.tags?.length
-                                              ? item.tags.join(" • ")
-                                              : ""}
-                                          </div>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </nav>
-
-            <div className="px-4 py-4 border-t border-slate-200 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400 space-y-2">
-              <div className="leading-relaxed">
-                Built by{" "}
-                <span className="text-slate-700 dark:text-slate-200 font-medium">
-                  {SITE.authorLabel}
-                </span>
-                . Field notes for Red/Blue work.
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => onGoDoc("about")}
-                  className="rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-[#0f1624]"
-                  type="button"
-                >
-                  {safeLang === "pl" ? "O mnie" : "About"}
-                </button>
-                <a
-                  href={SITE.repoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-[#0f1624]"
-                >
-                  GitHub
-                </a>
-              </div>
-            </div>
+            <input
+              id="kb-search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t.search}
+              style={{
+                width: "100%",
+                padding: "7px 10px 7px 30px",
+                background: T.bgCard,
+                border: `1px solid ${T.border}`,
+                borderRadius: "4px",
+                color: T.textBright,
+                fontFamily: T.mono,
+                fontSize: "12px",
+                outline: "none",
+                boxSizing: "border-box",
+                caretColor: T.gen,
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = T.borderHover)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = T.border)}
+            />
           </div>
-        </aside>
 
-        <main ref={mainRef} className="flex-1 relative h-full overflow-y-auto min-w-0">
-          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0a0e16]">
-            <div className="mx-auto max-w-6xl px-4 sm:px-8 py-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
+          <div style={{ display: "flex", gap: "6px" }}>
+            {[
+              { label: safeLang === "pl" ? "EN" : "PL", onClick: onSwitchLang },
+              { label: "GitHub", href: SITE.repoUrl },
+            ].map((b) =>
+              b.href ? (
+                <a
+                  key={b.label}
+                  href={b.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "5px 8px",
+                    borderRadius: "4px",
+                    border: `1px solid ${T.border}`,
+                    background: "transparent",
+                    color: T.textMuted,
+                    fontFamily: T.mono,
+                    fontSize: "10px",
+                    textDecoration: "none",
+                    letterSpacing: "0.06em",
+                    transition: "color 0.1s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = T.textBright)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
+                >
+                  {b.label}
+                </a>
+              ) : (
+                <button
+                  key={b.label}
+                  onClick={b.onClick}
+                  style={{
+                    flex: 1,
+                    padding: "5px 8px",
+                    borderRadius: "4px",
+                    border: `1px solid ${T.border}`,
+                    background: "transparent",
+                    color: T.textMuted,
+                    fontFamily: T.mono,
+                    fontSize: "10px",
+                    cursor: "pointer",
+                    letterSpacing: "0.06em",
+                    transition: "color 0.1s",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = T.textBright)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
+                >
+                  {b.label}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+
+        <nav style={{ flex: 1, overflowY: "auto", padding: "8px 8px 24px" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <button
+              onClick={() => onGoDoc("home")}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "7px 10px",
+                borderRadius: "4px",
+                background: isHome ? "rgba(255,255,255,0.04)" : "none",
+                borderLeft: `2px solid ${isHome ? T.gen : "transparent"}`,
+                border: "none",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              <Home
+                size={12}
+                style={{ color: isHome ? T.gen : T.textMuted, flexShrink: 0 }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: isHome ? T.textBright : T.textMuted,
+                  fontFamily: T.mono,
+                  letterSpacing: "0.08em",
+                }}
+              >
+                FEED
+              </span>
+            </button>
+          </div>
+
+          {pinned?.length ? (
+            <div style={{ marginBottom: "20px" }}>
+              <div
+                style={{
+                  padding: "0 10px 6px",
+                  fontSize: "9px",
+                  letterSpacing: "0.14em",
+                  color: T.textMuted,
+                  fontWeight: 600,
+                }}
+              >
+                {t.start}
+              </div>
+
+              {pinned.map((item) => (
+                <DocButton
+                  key={item.id}
+                  item={item}
+                  isActive={item.id === doc?.id}
+                  onGoDoc={onGoDoc}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {sectionsList.map((sec) => {
+            const m2 = ts(sec.team);
+            const isOpen = isSearching ? true : Boolean(openSections[sec.key]);
+
+            return (
+              <div key={sec.key} style={{ marginBottom: "18px" }}>
+                <button
+                  onClick={() => toggleSection(sec.key)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "5px 10px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    borderRadius: "4px",
+                    fontFamily: T.mono,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      minWidth: 0,
+                    }}
+                  >
+                    <ChevronRight
+                      size={11}
+                      style={{
+                        color: T.textMuted,
+                        transition: "transform 0.15s",
+                        transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
+                        flexShrink: 0,
+                      }}
+                    />
+
+                    <span
+                      style={{
+                        fontSize: "9px",
+                        letterSpacing: "0.14em",
+                        fontWeight: 700,
+                        color: T.textMuted,
+                        textTransform: "uppercase",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {sec.sectionLabel}
+                    </span>
+                  </div>
+
+                  <span
+                    style={{
+                      fontSize: "9px",
+                      letterSpacing: "0.1em",
+                      fontWeight: 700,
+                      color: m2.color,
+                      flexShrink: 0,
+                      background: `${m2.color}18`,
+                      border: `1px solid ${m2.border}`,
+                      borderRadius: "3px",
+                      padding: "2px 5px",
+                    }}
+                  >
+                    {m2.label}
+                  </span>
+                </button>
+
+                {isOpen && (
+                  <div style={{ paddingLeft: "4px" }}>
+                    {sec.subsArr?.map((sub) => {
+                      const subOpen = isSearching ? true : Boolean(openGroups[sub.key]);
+                      const isPsWU = sub.kind === "portswigger-writeups";
+
+                      return (
+                        <div key={sub.key}>
+                          {sub.label ? (
+                            <GroupToggle
+                              label={sub.label}
+                              count={sub.countOverride ?? sub.items.length}
+                              isOpen={subOpen}
+                              onToggle={() => toggleGroup(sub.key)}
+                              indentLevel={0}
+                            />
+                          ) : null}
+
+                          {(sub.label ? subOpen : true) && (
+                            <div style={{ paddingLeft: sub.label ? "12px" : "0" }}>
+                              {!isPsWU && renderDocList(sub.items)}
+
+                              {isPsWU &&
+                                sec.writeups?.topicsArr?.map((topic) => {
+                                  const topicOpen = isSearching
+                                    ? true
+                                    : Boolean(openGroups[topic.key]);
+
+                                  return (
+                                    <div key={topic.key}>
+                                      <GroupToggle
+                                        label={topic.label}
+                                        count={
+                                          topic.diffsArr?.reduce(
+                                            (a, g) => a + g.items.length,
+                                            0
+                                          ) ?? 0
+                                        }
+                                        isOpen={topicOpen}
+                                        onToggle={() => toggleGroup(topic.key)}
+                                        indentLevel={0}
+                                      />
+
+                                      {topicOpen &&
+                                        topic.diffsArr?.map((g) => {
+                                          const gOpen = isSearching
+                                            ? true
+                                            : Boolean(openGroups[g.key]);
+
+                                          return (
+                                            <div
+                                              key={g.key}
+                                              style={{ paddingLeft: "10px" }}
+                                            >
+                                              <GroupToggle
+                                                label={g.label}
+                                                count={g.items.length}
+                                                isOpen={gOpen}
+                                                onToggle={() => toggleGroup(g.key)}
+                                                indentLevel={0}
+                                              />
+
+                                              {gOpen && (
+                                                <div style={{ paddingLeft: "10px" }}>
+                                                  {renderDocList(g.items)}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {sec.groupsArr?.map((g) => {
+                      const gOpen = isSearching ? true : Boolean(openGroups[g.key]);
+
+                      return (
+                        <div key={g.key}>
+                          <GroupToggle
+                            label={g.label}
+                            count={g.items.length}
+                            isOpen={gOpen}
+                            onToggle={() => toggleGroup(g.key)}
+                          />
+                          {gOpen && (
+                            <div style={{ paddingLeft: "16px" }}>
+                              {renderDocList(g.items)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        <div
+          style={{
+            padding: "10px 14px 12px",
+            borderTop: `1px solid ${T.border}`,
+            flexShrink: 0,
+            fontSize: "10px",
+            color: T.textMuted,
+            fontFamily: T.mono,
+          }}
+        >
+          <span style={{ color: T.gen }}>$</span> built by{" "}
+          <span style={{ color: T.text }}>{SITE.authorLabel}</span>
+        </div>
+      </aside>
+
+      <main
+        ref={mainRef}
+        style={{
+          flex: 1,
+          height: "100dvh",
+          overflowY: "auto",
+          minWidth: 0,
+          background: T.bg,
+        }}
+      >
+        {!isHome && (
+          <header
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 20,
+              borderBottom: `1px solid ${T.border}`,
+              background: T.bgHeader,
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <div
+              style={{
+                maxWidth: "1100px",
+                margin: "0 auto",
+                padding: "12px 24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  minWidth: 0,
+                }}
+              >
                 {!isDesktop && (
                   <button
                     onClick={() => setSidebarOpen(true)}
-                    className="rounded-lg border border-slate-200 bg-white/80 p-2 text-slate-700 backdrop-blur hover:bg-white dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-200"
-                    type="button"
-                    aria-label="Open menu"
+                    style={{
+                      background: T.bgCard,
+                      border: `1px solid ${T.border}`,
+                      borderRadius: "4px",
+                      padding: "6px 8px",
+                      cursor: "pointer",
+                      color: T.textMuted,
+                      display: "flex",
+                    }}
                   >
-                    <Menu size={18} />
+                    <Menu size={16} />
                   </button>
                 )}
-                <div className={cx("rounded-xl border px-2.5 py-1 text-xs", meta.chip)}>
-                  <span className="inline-flex items-center gap-2">
-                    <meta.Icon size={14} />
-                    {meta.label}
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    flexShrink: 0,
+                    background: docMeta.dim,
+                    border: `1px solid ${docMeta.border}`,
+                    borderRadius: "4px",
+                    padding: "3px 9px",
+                  }}
+                >
+                  <docMeta.Icon size={12} style={{ color: docMeta.color }} />
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      color: docMeta.color,
+                      letterSpacing: "0.12em",
+                    }}
+                  >
+                    {docMeta.label}
                   </span>
                 </div>
-                <div className="text-sm font-semibold truncate">{doc.title}</div>
+
+                <div
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: T.text,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {doc?.title}
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="relative" ref={exportRef}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ position: "relative" }} ref={exportRef}>
                   <button
                     onClick={() => setExportOpen((v) => !v)}
-                    className={cx(
-                      "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors",
-                      exportOpen
-                        ? "border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-900"
-                        : "border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
-                    )}
-                    type="button"
-                    aria-haspopup="true"
-                    aria-expanded={exportOpen}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "6px 10px",
+                      borderRadius: "4px",
+                      border: `1px solid ${exportOpen ? T.borderHover : T.border}`,
+                      background: exportOpen ? T.bgCard : "transparent",
+                      color: T.textMuted,
+                      fontFamily: T.mono,
+                      fontSize: "11px",
+                      cursor: "pointer",
+                    }}
                   >
                     <Download size={12} />
-                    <span className="hidden sm:inline">Export</span>
+                    <span className="hidden-sm">export</span>
                   </button>
 
                   {exportOpen && (
-                    <div className="absolute right-0 top-full mt-1.5 z-50 flex flex-col bg-white dark:bg-[#0a0e16] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden text-xs min-w-[160px]">
-                      <div className="px-3 pt-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
-                        Eksportuj notatkę
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "calc(100% + 6px)",
+                        zIndex: 50,
+                        background: T.bgCard,
+                        border: `1px solid ${T.border}`,
+                        borderRadius: "6px",
+                        overflow: "hidden",
+                        minWidth: "160px",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "8px 12px 6px",
+                          fontSize: "9px",
+                          letterSpacing: "0.12em",
+                          color: T.textMuted,
+                          borderBottom: `1px solid ${T.border}`,
+                          fontWeight: 600,
+                        }}
+                      >
+                        EXPORT NOTE
                       </div>
+
                       <button
-                        onClick={() => {
-                          exportAsPDF(doc, articleRef);
-                          setExportOpen(false);
+                        onClick={handleExportPdf}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "9px 14px",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontFamily: T.mono,
+                          fontSize: "12px",
+                          color: T.text,
+                          textAlign: "left",
                         }}
-                        className="px-4 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-700 dark:text-slate-300 flex items-center gap-2.5 transition-colors"
-                        type="button"
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = T.bgCardHover)
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
-                        <span className="text-base leading-none">📄</span>
-                        <span>PDF / Drukuj</span>
+                        📄 PDF / Print
                       </button>
+
                       <button
-                        onClick={() => {
-                          exportAsMD(doc);
-                          setExportOpen(false);
+                        onClick={handleExportMd}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "9px 14px",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontFamily: T.mono,
+                          fontSize: "12px",
+                          color: T.text,
+                          textAlign: "left",
                         }}
-                        className="px-4 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-700 dark:text-slate-300 flex items-center gap-2.5 transition-colors"
-                        type="button"
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = T.bgCardHover)
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
-                        <span className="text-base leading-none">⬇</span>
-                        <span>Raw Markdown</span>
+                        ⬇ Raw Markdown
                       </button>
                     </div>
                   )}
@@ -1315,97 +2447,289 @@ export default function SecurityGuidebook() {
                   href={editUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "6px 10px",
+                    borderRadius: "4px",
+                    border: `1px solid ${T.border}`,
+                    background: "transparent",
+                    color: T.textMuted,
+                    fontFamily: T.mono,
+                    fontSize: "11px",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = T.textBright)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
                 >
-                  <span className="hidden sm:inline">{t.edit}</span>
+                  <span className="hidden-sm">{t.edit}</span>
                   <ExternalLink size={12} />
                 </a>
               </div>
             </div>
           </header>
+        )}
 
-          <div className="mx-auto max-w-6xl px-4 sm:px-8 py-6 sm:py-10 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8 lg:gap-10">
-            <article ref={articleRef} className="min-w-0">
+        {isHome && !isDesktop && (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderBottom: `1px solid ${T.border}`,
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            <button
+              onClick={() => setSidebarOpen(true)}
+              style={{
+                background: T.bgCard,
+                border: `1px solid ${T.border}`,
+                borderRadius: "4px",
+                padding: "6px 8px",
+                cursor: "pointer",
+                color: T.textMuted,
+                display: "flex",
+              }}
+            >
+              <Menu size={16} />
+            </button>
+
+            <span style={{ fontSize: "13px", color: T.textMuted, fontFamily: T.mono }}>
+              field-manual
+            </span>
+          </div>
+        )}
+
+        {isHome ? (
+          <HomeView docs={sidebarItems} onGoDoc={onGoDoc} />
+        ) : doc ? (
+          <div
+            style={{
+              maxWidth: "1100px",
+              margin: "0 auto",
+              padding: "32px 24px 48px",
+              display: "grid",
+              gridTemplateColumns: "1fr 240px",
+              gap: "40px",
+            }}
+          >
+            <article ref={articleRef} style={{ minWidth: 0 }}>
               {isFallback && (
-                <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
-                  {t.fallback}
+                <div
+                  style={{
+                    marginBottom: "20px",
+                    padding: "10px 16px",
+                    background: "rgba(245,158,11,0.07)",
+                    border: `1px solid rgba(245,158,11,0.25)`,
+                    borderRadius: "5px",
+                    fontSize: "12px",
+                    color: T.amber,
+                    fontFamily: T.mono,
+                  }}
+                >
+                  ⚠ {t.fallback}
                 </div>
               )}
 
-              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: "6px",
+                  marginBottom: "24px",
+                }}
+              >
                 {doc.updatedAt && (
-                  <span className="rounded-full border border-slate-200 px-2 py-0.5 dark:border-slate-800">
-                    {t.updated}: {doc.updatedAt}
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontSize: "11px",
+                      color: T.textMuted,
+                      background: T.bgCard,
+                      border: `1px solid ${T.border}`,
+                      borderRadius: "4px",
+                      padding: "3px 8px",
+                    }}
+                  >
+                    <Clock size={10} /> {t.updated}: {doc.updatedAt}
                   </span>
                 )}
+
                 {doc.difficulty && (
-                  <span className="rounded-full border border-slate-200 px-2 py-0.5 dark:border-slate-800">
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: T.textMuted,
+                      background: T.bgCard,
+                      border: `1px solid ${T.border}`,
+                      borderRadius: "4px",
+                      padding: "3px 8px",
+                    }}
+                  >
                     {t.difficulty}: {doc.difficulty}
                   </span>
                 )}
+
                 {doc.tags?.length ? (
-                  <span className="rounded-full border border-slate-200 px-2 py-0.5 dark:border-slate-800">
-                    {doc.tags.join(" • ")}
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: T.textMuted,
+                      background: T.bgCard,
+                      border: `1px solid ${T.border}`,
+                      borderRadius: "4px",
+                      padding: "3px 8px",
+                    }}
+                  >
+                    {doc.tags.join(" · ")}
                   </span>
                 ) : null}
               </div>
 
               <Markdown content={doc.content} />
 
-              <div className="mt-12 pt-6 border-t border-slate-200 dark:border-slate-900 flex items-center justify-between gap-4">
-                <button
-                  disabled={!prevDoc}
-                  onClick={() => prevDoc && onGoDoc(prevDoc.id)}
-                  className={cx(
-                    "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
-                    prevDoc
-                      ? "border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
-                      : "border-slate-200 text-slate-400 dark:border-slate-800 dark:text-slate-600 cursor-not-allowed"
-                  )}
-                  type="button"
-                >
-                  <ChevronLeft size={16} /> {t.prev}
-                </button>
-                <button
-                  disabled={!nextDoc}
-                  onClick={() => nextDoc && onGoDoc(nextDoc.id)}
-                  className={cx(
-                    "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
-                    nextDoc
-                      ? "border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900"
-                      : "border-slate-200 text-slate-400 dark:border-slate-800 dark:text-slate-600 cursor-not-allowed"
-                  )}
-                  type="button"
-                >
-                  {t.next} <ChevronRight size={16} />
-                </button>
+              <div
+                style={{
+                  marginTop: "48px",
+                  paddingTop: "20px",
+                  borderTop: `1px solid ${T.border}`,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                }}
+              >
+                {[
+                  { doc: prevDoc, label: `← ${t.prev}`, align: "left" },
+                  { doc: nextDoc, label: `${t.next} →`, align: "right" },
+                ].map(({ doc: d, label, align }) => (
+                  <button
+                    key={label}
+                    disabled={!d}
+                    onClick={() => d && onGoDoc(d.id)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: align === "right" ? "flex-end" : "flex-start",
+                      gap: "3px",
+                      padding: "10px 14px",
+                      borderRadius: "5px",
+                      border: `1px solid ${T.border}`,
+                      background: d ? "transparent" : "none",
+                      cursor: d ? "pointer" : "not-allowed",
+                      opacity: d ? 1 : 0.35,
+                      fontFamily: T.mono,
+                      transition: "border-color 0.12s",
+                      maxWidth: "45%",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (d) e.currentTarget.style.borderColor = T.borderHover;
+                    }}
+                    onMouseLeave={(e) => {
+                      if (d) e.currentTarget.style.borderColor = T.border;
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: T.textMuted,
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {label}
+                    </span>
+
+                    {d && (
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: T.text,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          maxWidth: "100%",
+                        }}
+                      >
+                        {d.title}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             </article>
 
-            <aside className="hidden lg:block">
-              <div className="sticky top-24 max-h-[calc(100vh-7rem)] flex flex-col">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 shrink-0">
+            <aside style={{ display: "block" }}>
+              <div
+                style={{
+                  position: "sticky",
+                  top: "68px",
+                  maxHeight: "calc(100vh - 5rem)",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "9px",
+                    letterSpacing: "0.14em",
+                    fontWeight: 700,
+                    color: T.textMuted,
+                    marginBottom: "12px",
+                    fontFamily: T.mono,
+                  }}
+                >
                   {t.onThisPage}
                 </div>
+
                 <div
-                  className="mt-3 overflow-y-auto space-y-0.5 pr-1
-      scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800
-      scrollbar-track-transparent"
+                  style={{
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1px",
+                  }}
                 >
                   {tocItems.length === 0 ? (
-                    <div className="text-sm text-slate-500 dark:text-slate-400">-</div>
+                    <span style={{ fontSize: "12px", color: T.textMuted }}>—</span>
                   ) : (
                     tocItems.map((item) => (
                       <button
                         key={item.id}
                         onClick={() => scrollToHeading(item.id)}
-                        className={cx(
-                          "w-full text-left rounded-md px-2 py-1.5 text-sm transition-colors",
-                          activeTocId === item.id
-                            ? "text-slate-900 bg-slate-100 dark:text-slate-100 dark:bg-slate-900/60 font-medium"
-                            : "text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-900/40"
-                        )}
-                        type="button"
+                        style={{
+                          textAlign: "left",
+                          padding: "5px 8px",
+                          borderRadius: "4px",
+                          background:
+                            activeTocId === item.id
+                              ? "rgba(255,255,255,0.04)"
+                              : "transparent",
+                          borderLeft: `2px solid ${
+                            activeTocId === item.id ? T.gen : "transparent"
+                          }`,
+                          border: "none",
+                          outline: "none",
+                          cursor: "pointer",
+                          fontFamily: T.mono,
+                          fontSize: "12px",
+                          color: activeTocId === item.id ? T.textBright : T.textMuted,
+                          transition: "all 0.1s",
+                          lineHeight: "1.35",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (activeTocId !== item.id) {
+                            e.currentTarget.style.color = T.text;
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (activeTocId !== item.id) {
+                            e.currentTarget.style.color = T.textMuted;
+                          }
+                        }}
                       >
                         {item.text}
                       </button>
@@ -1415,8 +2739,8 @@ export default function SecurityGuidebook() {
               </div>
             </aside>
           </div>
-        </main>
-      </div>
+        ) : null}
+      </main>
     </div>
   );
 }
