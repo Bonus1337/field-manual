@@ -1,19 +1,77 @@
 import { buildToc } from "./toc";
 
+function stripQuotes(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/^"(.*)"$/, "$1")
+    .replace(/^'(.*)'$/, "$1");
+}
+
+function parseInlineArray(value) {
+  const trimmed = String(value ?? "").trim();
+
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return [];
+
+  const inner = trimmed.slice(1, -1).trim();
+  if (!inner) return [];
+
+  return inner
+    .split(",")
+    .map((item) => stripQuotes(item))
+    .filter(Boolean);
+}
+
+function parseBracketArray(lines) {
+  const items = [];
+
+  for (const rawLine of lines) {
+    let line = String(rawLine ?? "").trim();
+
+    if (!line || line === "[" || line === "]") continue;
+
+    line = line.replace(/^\[/, "").replace(/\]$/, "").trim();
+    line = line.replace(/,$/, "").trim();
+
+    if (!line) continue;
+
+    items.push(stripQuotes(line));
+  }
+
+  return items;
+}
+
 function parseFrontmatter(raw) {
-  const fm = { data: {}, content: raw };
+  const normalizedRaw = String(raw ?? "").replace(/^\uFEFF/, "");
+  const fm = { data: {}, content: normalizedRaw };
 
-  if (!raw.startsWith("---")) return fm;
+  if (!/^---\s*(\r?\n|$)/.test(normalizedRaw)) return fm;
 
-  const end = raw.indexOf("\n---", 3);
-  if (end === -1) return fm;
+  const lines = normalizedRaw.split(/\r?\n/);
 
-  const header = raw.slice(3, end).trim();
-  const body = raw.slice(end + 4).replace(/^\s*\n/, "");
+  if (lines[0].trim() !== "---") return fm;
+
+  let endIndex = -1;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === "---") {
+      endIndex = i;
+      break;
+    }
+  }
+
+  if (endIndex === -1) return fm;
+
+  const headerLines = lines.slice(1, endIndex);
+  const body = lines
+    .slice(endIndex + 1)
+    .join("\n")
+    .replace(/^\s*\n/, "");
 
   const data = {};
-  for (const line of header.split("\n")) {
-    const trimmed = line.trim();
+
+  for (let i = 0; i < headerLines.length; i++) {
+    const rawLine = headerLines[i];
+    const trimmed = rawLine.trim();
+
     if (!trimmed || trimmed.startsWith("#")) continue;
 
     const idx = trimmed.indexOf(":");
@@ -22,26 +80,41 @@ function parseFrontmatter(raw) {
     const key = trimmed.slice(0, idx).trim();
     let value = trimmed.slice(idx + 1).trim();
 
-    value = value.replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1");
-
+    // inline array: tags: ["a", "b"]
     if (value.startsWith("[") && value.endsWith("]")) {
-      const inner = value.slice(1, -1).trim();
-      if (!inner) data[key] = [];
-      else {
-        data[key] = inner
-          .split(",")
-          .map((s) =>
-            s
-              .trim()
-              .replace(/^"(.*)"$/, "$1")
-              .replace(/^'(.*)'$/, "$1")
-          )
-          .filter(Boolean);
-      }
+      data[key] = parseInlineArray(value);
       continue;
     }
 
-    data[key] = value;
+    if (value === "" && headerLines[i + 1]?.trim().startsWith("[")) {
+      const arrayLines = [];
+      i += 1;
+
+      while (i < headerLines.length) {
+        const line = headerLines[i];
+        arrayLines.push(line);
+
+        if (line.trim().endsWith("]")) break;
+        i += 1;
+      }
+
+      data[key] = parseBracketArray(arrayLines);
+      continue;
+    }
+
+    if (value.startsWith("[") && !value.endsWith("]")) {
+      const arrayLines = [value];
+      while (i + 1 < headerLines.length) {
+        i += 1;
+        arrayLines.push(headerLines[i]);
+        if (headerLines[i].trim().endsWith("]")) break;
+      }
+
+      data[key] = parseBracketArray(arrayLines);
+      continue;
+    }
+
+    data[key] = stripQuotes(value);
   }
 
   fm.data = data;
@@ -102,11 +175,17 @@ function loadLocale(locale) {
       category: data.category || autoCategory,
       tags: Array.isArray(data.tags) ? data.tags : data.tags ? [data.tags] : [],
       difficulty: data.difficulty || "unknown",
+      shortDescription: data.shortDescription || "",
       updatedAt: data.updatedAt || null,
       sourcePath: path.replace("/content/", "content/"),
       content,
       toc: buildToc(content),
       nav,
+      sources: Array.isArray(data.sources)
+        ? data.sources
+        : data.sources
+          ? [data.sources]
+          : [],
     });
   }
 
