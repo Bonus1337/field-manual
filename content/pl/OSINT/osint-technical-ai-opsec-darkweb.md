@@ -5,6 +5,7 @@ team: red-blue
 category: osint
 tags: ["osint", "ai", "opsec", "darkweb", "canarytokens", "theharvester", "feroxbuster"]
 difficulty: easy
+shortDescription: "Przekrojowa notatka o nowoczesnym OSINT, łącząca techniczny recon, pivoting, ocenę wiarygodności treści generowanych przez AI, własny OPSEC oraz higienę pracy z dokumentami, zdjęciami i zasobami dark webu, tak żeby z wielu rozproszonych sygnałów budować sensowny i bezpieczny workflow analityczny."
 updatedAt: "2026-03-12"
 ---
 

@@ -5,6 +5,7 @@ team: red
 category: eJPT
 tags: ["recon", "passive", "active", "nmap", "dns", "osint", "whois", "subdomain", "ejpt"]
 difficulty: easy
+shortDescription: "A comprehensive guide to information gathering in the context of penetration testing and preparation for the eJPT, covering passive and active reconnaissance methods, analysis of OSINT sources, DNS, subdomains, and technologies, as well as active scanning and target profiling techniques that form the basis for further enumeration."
 updatedAt: "2025-03-06"
 ---
 

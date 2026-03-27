@@ -5,6 +5,7 @@ team: red
 category: General
 tags: ["offsec", "mindset", "recon", "web"]
 difficulty: easy
+shortDescription: "Wprowadzenie do offensive security skupione na sposobie myślenia atakującego, pokazujące dlaczego największą przewagę daje nie sama znajomość narzędzi, ale umiejętność stawiania hipotez, enumeracji ukrytych funkcji i przekładania obserwacji z rekonesansu na realny scenariusz testowy."
 updatedAt: "2026-02-15"
 ---
 

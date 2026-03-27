@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["portswigger", "access-control", "admin-panel", "robots.txt", "misconfiguration"]
 difficulty: apprentice
+shortDescription: "Prosty write-up z labu PortSwigger, w którym panel administracyjny okazuje się publicznie dostępny po ścieżce ujawnionej w robots.txt, a brak serwerowej autoryzacji pozwala wykonać uprzywilejowaną akcję bez bycia administratorem."
 updatedAt: "2026-02-16"
 ---
 

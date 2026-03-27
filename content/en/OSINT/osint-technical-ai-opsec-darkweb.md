@@ -5,6 +5,7 @@ team: red-blue
 category: osint
 tags: ["osint", "ai", "opsec", "darkweb", "canarytokens", "theharvester", "feroxbuster"]
 difficulty: easy
+shortDescription: "A broad note on modern OSINT that connects technical reconnaissance, pivoting, AI-generated content validation, personal OPSEC, and safe handling of documents, images, and dark web resources, so that scattered signals can be turned into a coherent and secure analytical workflow."
 updatedAt: "2026-03-12"
 ---
 

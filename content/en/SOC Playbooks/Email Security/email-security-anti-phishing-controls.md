@@ -5,6 +5,7 @@ team: blue
 category: email security
 tags: ["phishing", "email-security", "spf", "dmarc", "smime", "smtp", "soc", "triage"]
 difficulty: medium
+shortDescription: "A practical note that organizes the key email security controls against phishing - from SPF, DKIM, DMARC, and S/MIME, through header and message analysis, to filters, secure email gateways, sandboxes, and the user as the final decision layer."
 updatedAt: "2026-02-25"
 ---
 

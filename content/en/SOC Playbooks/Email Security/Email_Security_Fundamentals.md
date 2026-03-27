@@ -5,6 +5,7 @@ team: blue
 category: email security
 tags: ["email-security", "phishing", "spam", "email-headers", "soc", "social-engineering"]
 difficulty: easy
+shortDescription: "A practical note on email threat analysis that organizes the key elements of triage, header review, content assessment, attachment handling, and technical artifact extraction so that phishing can be distinguished from normal correspondence more quickly and useful material can be passed forward for detection and defense."
 updatedAt: "2026-02-21"
 ---
 

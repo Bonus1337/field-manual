@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["idor", "information-disclosure", "static-files", "predictable-ids"]
 difficulty: apprentice
+shortDescription: "A concise PortSwigger lab write-up showing an IDOR issue on static files with predictable identifiers, where missing authorization on transcript downloads leads to password disclosure and account takeover of another user."
 updatedAt: "2026-02-18"
 ---
 

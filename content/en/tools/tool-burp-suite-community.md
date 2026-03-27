@@ -5,6 +5,7 @@ team: general
 category: tools
 tags: ["burp-suite", "proxy", "repeater", "intruder", "decoder", "web-pentest"]
 difficulty: easy
+shortDescription: "A practical field manual for Burp Suite Community that organizes the full workflow of working with a web application - from setting scope and collecting traffic, through controlled experiments in Repeater, to mapping logic, testing hypotheses, and documenting results in a way that is useful during labs and real assessments."
 updatedAt: "2026-03-03"
 ---
 

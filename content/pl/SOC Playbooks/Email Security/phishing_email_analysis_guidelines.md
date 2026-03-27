@@ -5,6 +5,7 @@ team: blue
 category: email security
 tags: ["phishing", "email-analysis", "social-engineering", "triage", "email-security"]
 difficulty: easy
+shortDescription: "Praktyczny przewodnik po wstępnej analizie phishingu, skupiony na tym, jak rozpoznawać pretekst, presję i oczekiwaną akcję w wiadomości, które sygnały ważyć najmocniej podczas triage’u oraz jak podejmować lepsze decyzje zanim przejdzie się do głębszej analizy technicznej."
 updatedAt: "2026-02-22"
 ---
 

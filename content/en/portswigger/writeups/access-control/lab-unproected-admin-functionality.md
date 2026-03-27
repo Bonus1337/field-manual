@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["portswigger", "access-control", "admin-panel", "robots.txt", "misconfiguration"]
 difficulty: apprentice
+shortDescription: "A straightforward PortSwigger lab write-up where an admin panel is exposed through a path disclosed in robots.txt, and missing server-side authorization allows a privileged action to be performed without actually being an administrator."
 updatedAt: "2026-02-16"
 ---
 

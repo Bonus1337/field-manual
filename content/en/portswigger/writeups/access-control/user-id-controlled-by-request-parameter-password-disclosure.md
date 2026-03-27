@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["access-control", "idor", "password-disclosure", "parameter-tampering"]
 difficulty: apprentice
+shortDescription: "A PortSwigger lab write-up where a simple id parameter tampering issue leads not only to viewing another user’s profile, but also to disclosure of the administrator’s full password hidden only superficially inside a form, resulting in account takeover and access to administrative functionality."
 updatedAt: "2026-02-18"
 ---
 

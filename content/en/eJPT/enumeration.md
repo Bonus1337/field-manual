@@ -5,6 +5,7 @@ team: red
 category: eJPT
 tags: ["nmap", "nse", "metasploit", "ftp", "smb", "http", "mysql", "ssh", "smtp"]
 difficulty: easy
+shortDescription: "A comprehensive guide to enumeration in the context of penetration testing and preparation for the eJPT, covering workflows, checklists for the most common services, and an analytical approach focused on transforming scan results into actionable attack hypotheses."
 updatedAt: "2026-03-08"
 ---
 

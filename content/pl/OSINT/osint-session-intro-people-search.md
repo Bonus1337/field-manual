@@ -5,6 +5,7 @@ team: red-blue
 category: osint
 tags: ["osint", "namint", "socmint", "opsec", "browser", "email", "phone", "image"]
 difficulty: easy
+shortDescription: "Notatki z pierwszej sesji OSINT uporządkowane wokół podstaw procesu, higieny pracy i poszukiwania osób, pokazujące jak łączyć pytanie badawcze z OPSEC, archiwizacją oraz praktycznym playbookiem dla nicków, e-maili, numerów telefonu, danych osobowych i zdjęć."
 updatedAt: "2026-02-25"
 ---
 

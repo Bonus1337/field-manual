@@ -5,6 +5,7 @@ team: blue
 category: email security
 tags: ["email-security", "phishing", "spam", "email-headers", "soc", "social-engineering"]
 difficulty: easy
+shortDescription: "Praktyczna notatka o analizie zagrożeń w wiadomościach e-mail, porządkująca najważniejsze elementy triage’u, pracy z nagłówkami, oceną treści, załączników i artefaktów technicznych tak, aby szybciej odróżniać phishing od zwykłej korespondencji i wyciągać materiał do detekcji oraz dalszej obrony."
 updatedAt: "2026-02-21"
 ---
 

@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["portswigger", "access-control", "cookie", "role-tampering", "misconfiguration"]
 difficulty: apprentice
+shortDescription: "Praktyczny write-up z labu PortSwigger pokazujący, jak pozornie niewinny plik cookie z flagą Admin staje się źródłem pełnej eskalacji uprawnień, gdy aplikacja ufa wartości kontrolowanej przez użytkownika i na tej podstawie wpuszcza go do strefy administracyjnej."
 updatedAt: "2026-02-17"
 ---
 

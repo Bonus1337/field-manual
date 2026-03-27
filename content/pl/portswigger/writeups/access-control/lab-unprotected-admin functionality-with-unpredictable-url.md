@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["portswigger", "access-control", "admin-panel", "source-code", "misconfiguration"]
 difficulty: apprentice
+shortDescription: "Write-up z labu PortSwigger pokazujący, że „nieprzewidywalny” adres panelu administracyjnego nie daje żadnego realnego bezpieczeństwa, jeśli ścieżka wycieka w kodzie źródłowym, a serwer i tak nie egzekwuje autoryzacji dla funkcji uprzywilejowanych."
 updatedAt: "2026-02-17"
 ---
 

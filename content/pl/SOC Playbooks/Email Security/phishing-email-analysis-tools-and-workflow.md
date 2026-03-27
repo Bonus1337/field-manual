@@ -5,6 +5,7 @@ team: blue
 category: email security
 tags: ["phishing", "email-analysis", "osint", "soc", "malware-sandbox", "ioc", "triage"]
 difficulty: easy
+shortDescription: "Roboczy przewodnik po analizie phishingowych wiadomości e-mail, łączący konkretne narzędzia z praktycznym workflow pracy nad nagłówkami, linkami i załącznikami tak, aby z podejrzanej wiadomości szybko wyciągać IOC-i, kontekst techniczny i materiał przydatny dla całego zespołu."
 updatedAt: "2026-02-23"
 ---
 

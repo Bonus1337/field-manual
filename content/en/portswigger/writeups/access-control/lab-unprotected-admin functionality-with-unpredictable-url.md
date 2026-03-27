@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["portswigger", "access-control", "admin-panel", "source-code", "misconfiguration"]
 difficulty: apprentice
+shortDescription: "A PortSwigger lab write-up showing that an ‘unpredictable’ admin panel URL provides no real security when the path leaks in source code and the server still fails to enforce authorization on privileged functionality."
 updatedAt: "2026-02-17"
 ---
 

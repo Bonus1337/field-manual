@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["access-control", "idor", "horizontal-privilege-escalation", "parameter-tampering"]
 difficulty: apprentice
+shortDescription: "A PortSwigger lab write-up showing that seemingly safe, unpredictable user identifiers do not fix access control problems when the application leaks a user’s GUID in public places and the backend blindly trusts the id value supplied in the request."
 updatedAt: "2026-02-18"
 ---
 

@@ -229,7 +229,7 @@ export function exportAsPDF(doc, articleRef) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(doc.title)} — Red/Blue Field Manual</title>
+  <title>${escapeHtml(doc.title)} - Red/Blue Field Manual</title>
   <style>
     *, *::before, *::after {
       box-sizing: border-box;

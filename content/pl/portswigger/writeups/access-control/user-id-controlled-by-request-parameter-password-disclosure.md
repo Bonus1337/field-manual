@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["access-control", "idor", "password-disclosure", "parameter-tampering"]
 difficulty: apprentice
+shortDescription: "Write-up z labu PortSwigger, w którym zwykła podmiana parametru id prowadzi nie tylko do podejrzenia cudzego profilu, ale też do ujawnienia pełnego hasła administratora ukrytego jedynie pozornie w formularzu, co kończy się przejęciem konta i dostępem do funkcji administracyjnych."
 updatedAt: "2026-02-18"
 ---
 

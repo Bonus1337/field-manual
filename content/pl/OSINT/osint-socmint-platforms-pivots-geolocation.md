@@ -5,6 +5,7 @@ team: red-blue
 category: osint
 tags: ["osint", "geoint", "maps", "companies", "metadata", "breaches", "image-forensics"]
 difficulty: easy
+shortDescription: "Rozbudowane notatki z sesji SOCMINT pokazujące, jak przechodzić od pojedynczego sygnału do całego łańcucha pivotów - przez profile, grupy, zdjęcia, maile i lokalizacje - oraz jak łączyć platformy społecznościowe z geolokalizacją, żeby z chaosu zbudować spójny obraz osoby, relacji i miejsca."
 updatedAt: "2026-03-18"
 ---
 

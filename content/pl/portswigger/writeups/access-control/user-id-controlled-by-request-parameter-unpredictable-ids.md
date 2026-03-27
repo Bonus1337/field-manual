@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["access-control", "idor", "horizontal-privilege-escalation", "parameter-tampering"]
 difficulty: apprentice
+shortDescription: "Write-up z labu PortSwigger pokazujący, że nawet pozornie bezpieczne, nieprzewidywalne identyfikatory użytkowników nie rozwiązują problemu kontroli dostępu, jeśli aplikacja sama ujawnia GUID w publicznych miejscach, a backend bezrefleksyjnie ufa wartości id przekazanej w żądaniu."
 updatedAt: "2026-02-18"
 ---
 

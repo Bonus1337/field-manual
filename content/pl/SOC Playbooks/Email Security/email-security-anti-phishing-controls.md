@@ -5,6 +5,7 @@ team: blue
 category: email security
 tags: ["phishing", "email-security", "spf", "dmarc", "smime", "smtp", "soc", "triage"]
 difficulty: medium
+shortDescription: "Notatka porządkująca praktyczne mechanizmy ochrony poczty przed phishingiem - od SPF, DKIM, DMARC i S/MIME, przez analizę nagłówków i treści wiadomości, aż po filtry, secure email gatewaye, sandboxy i rolę użytkownika jako ostatniej warstwy decyzyjnej."
 updatedAt: "2026-02-25"
 ---
 

@@ -5,6 +5,7 @@ team: red-blue
 category: osint
 tags: ["osint", "namint", "socmint", "opsec", "browser", "email", "phone", "image"]
 difficulty: easy
+shortDescription: "Notes from a first OSINT session organized around process fundamentals, operational hygiene, and people search, showing how to connect an investigative question with OPSEC, archiving, and a practical playbook for usernames, email addresses, phone numbers, personal data, and images."
 updatedAt: "2026-02-25"
 ---
 

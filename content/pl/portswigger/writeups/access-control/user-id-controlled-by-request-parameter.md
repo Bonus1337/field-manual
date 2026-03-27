@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["access-control", "idor", "horizontal-privilege-escalation", "parameter-tampering"]
 difficulty: apprentice
+shortDescription: "Klasyczny write-up z labu PortSwigger pokazujący, jak zwykła podmiana parametru id w żądaniu prowadzi do poziomej eskalacji uprawnień i ujawnienia cudzego klucza API, gdy backend utożsamia „czyje konto wyświetlić” z wartością dostarczoną przez użytkownika zamiast z aktywną sesją."
 updatedAt: "2026-02-18"
 ---
 

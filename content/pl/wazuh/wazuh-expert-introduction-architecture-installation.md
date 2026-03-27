@@ -5,6 +5,7 @@ team: blue
 category: wazuh expert 2024
 tags: ["wazuh", "siem", "xdr", "soc", "blue-team", "detection", "ossec", "agentless"]
 difficulty: medium
+shortDescription: "Pierwsza część notatek o Wazuhu porządkująca fundamenty systemu - od architektury, agentów i trybu agentless, przez instalację i pierwsze wdrożenie labowe, aż po sens działania reguł, decoderów i Active Response jako bazy pod realną widoczność oraz detekcję w środowisku."
 updatedAt: "2026-03-25"
 ---
 

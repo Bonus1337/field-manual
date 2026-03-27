@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["access-control", "idor", "horizontal-privilege-escalation", "parameter-tampering"]
 difficulty: apprentice
+shortDescription: "A classic PortSwigger lab write-up showing how a simple id parameter change in the request leads to horizontal privilege escalation and disclosure of another user’s API key when the backend decides whose account to display based on user input instead of the active session."
 updatedAt: "2026-02-18"
 ---
 

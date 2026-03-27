@@ -5,6 +5,7 @@ team: red-blue
 category: osint
 tags: ["osint", "geoint", "maps", "companies", "metadata", "breaches", "image-forensics"]
 difficulty: easy
+shortDescription: "A practical OSINT guide built around three pillars - maps, entities, and automation - showing how to form hypotheses, turn isolated signals into verifiable findings, and scale the workflow so that geolocation, documents, registries, and technical data produce real analytical value."
 updatedAt: "2026-03-05"
 ---
 

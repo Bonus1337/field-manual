@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["access-control", "privilege-escalation", "parameter-tampering"]
 difficulty: apprentice
+shortDescription: "A PortSwigger lab write-up showing privilege escalation through modification of the roleid field in a user profile endpoint, where the backend accepts data that a normal user should never be able to control, ultimately leading to full access to administrative functionality."
 updatedAt: "2026-02-18"
 ---
 

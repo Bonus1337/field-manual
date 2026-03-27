@@ -5,6 +5,7 @@ team: red
 category: portswigger academy
 tags: ["access-control", "idor", "privilege-escalation", "authz", "misconfiguration"]
 difficulty: medium
+shortDescription: "A structured overview of access control and privilege escalation in web applications, focused on the distinction between authentication, session handling, and authorization, the most common enforcement failures, IDOR mechanics, and architectural inconsistencies that lead to access control bypasses."
 updatedAt: "2026-02-16"
 ---
 

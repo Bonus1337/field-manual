@@ -5,6 +5,7 @@ team: blue
 category: General
 tags: ["blue-team", "soc", "siem", "incident-response", "defence-in-depth"]
 difficulty: easy
+shortDescription: "A concise introduction to defensive security that organizes the core blue team roles, processes, and dependencies - from monitoring and triage, through incident response and SIEM, to defence in depth and the mindset of keeping the business running under pressure."
 updatedAt: "2026-02-16"
 ---
 

@@ -5,6 +5,7 @@ team: blue
 category: wazuh expert 2024
 tags: ["wazuh", "siem", "xdr", "soc", "blue-team", "detection", "ossec", "agentless"]
 difficulty: medium
+shortDescription: "The first part of the Wazuh notes, organizing the system fundamentals - from architecture, agents, and agentless mode, through installation and the first lab deployment, to the role of rules, decoders, and Active Response as the foundation for real visibility and detection in an environment."
 updatedAt: "2026-03-25"
 ---
 

@@ -35,7 +35,7 @@ const UI = {
     edit: "Edytuj",
     updated: "Updated",
     difficulty: "Lvl",
-    fallback: "Brak tej wersji językowej — pokazuję dostępną.",
+    fallback: "Brak tej wersji językowej - pokazuję dostępną.",
     onThisPage: "NA TEJ STRONIE",
     next: "next",
     prev: "prev",
@@ -47,7 +47,7 @@ const UI = {
     edit: "Edit",
     updated: "Updated",
     difficulty: "Lvl",
-    fallback: "No translation available — showing other language.",
+    fallback: "No translation available - showing other language.",
     onThisPage: "ON THIS PAGE",
     next: "next",
     prev: "prev",
@@ -1004,7 +1004,7 @@ function HomeView({ docs, onGoDoc }) {
               lineHeight: "1.7",
             }}
           >
-            Offensive &amp; defensive security notes — web application security, pentest
+            Offensive &amp; defensive security notes - web application security, pentest
             workflow, CTF writeups, eJPT prep, mindset i praktyczne case-study.
           </p>
 
@@ -2694,7 +2694,7 @@ export default function SecurityGuidebook() {
                   }}
                 >
                   {tocItems.length === 0 ? (
-                    <span style={{ fontSize: "12px", color: T.textMuted }}>—</span>
+                    <span style={{ fontSize: "12px", color: T.textMuted }}>-</span>
                   ) : (
                     tocItems.map((item) => (
                       <button

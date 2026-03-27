@@ -5,6 +5,7 @@ team: red
 category: portswigger academy
 tags: ["access-control", "idor", "privilege-escalation", "authz", "misconfiguration"]
 difficulty: medium
+shortDescription: "Uporządkowane omówienie kontroli dostępu i eskalacji uprawnień w aplikacjach webowych, skupione na różnicy między uwierzytelnianiem, sesją i autoryzacją, najczęstszych błędach enforcementu, mechanice IDOR oraz architektonicznych niespójnościach, które prowadzą do obejścia reguł dostępu."
 updatedAt: "2026-02-16"
 ---
 

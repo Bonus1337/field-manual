@@ -5,6 +5,7 @@ team: red-blue
 category: osint
 tags: ["osint", "geoint", "maps", "companies", "metadata", "breaches", "image-forensics"]
 difficulty: easy
+shortDescription: "Detailed notes from a SOCMINT session focused on moving from a single clue to a full chain of pivots - through profiles, groups, images, emails, and locations - and on combining social platforms with geolocation to turn scattered signals into a coherent picture of a person, their relationships, and a place."
 updatedAt: "2026-03-18"
 ---
 

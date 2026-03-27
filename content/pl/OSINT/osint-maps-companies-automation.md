@@ -5,6 +5,7 @@ team: red-blue
 category: osint
 tags: ["osint", "geoint", "maps", "companies", "metadata", "breaches", "image-forensics"]
 difficulty: easy
+shortDescription: "Praktyczny materiał o OSINT oparty na trzech filarach - mapach, podmiotach i automatyzacji - pokazujący jak budować hipotezy, zamieniać pojedyncze sygnały w weryfikowalne ustalenia oraz skalować pracę tak, by z geolokalizacji, dokumentów, rejestrów i danych technicznych wyciągać realną wartość analityczną."
 updatedAt: "2026-03-05"
 ---
 

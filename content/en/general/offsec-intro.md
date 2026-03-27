@@ -5,6 +5,7 @@ team: red
 category: General
 tags: ["offsec", "mindset", "recon", "web"]
 difficulty: easy
+shortDescription: "An introduction to offensive security centered on attacker-style thinking, showing why the real advantage comes not from tools alone, but from forming hypotheses, enumerating hidden functionality, and turning reconnaissance observations into a meaningful testing path."
 updatedAt: "2026-02-15"
 ---
 

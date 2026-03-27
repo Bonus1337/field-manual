@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["idor", "horizontal-privilege-escalation", "redirect", "information-disclosure"]
 difficulty: apprentice
+shortDescription: "A PortSwigger lab write-up covering an unusual IDOR variant where the application tries to hide missing authorization behind a redirect, yet still leaks another user’s sensitive data in the response body - in this case, an API key visible only at the raw HTTP level."
 updatedAt: "2026-02-18"
 ---
 

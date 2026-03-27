@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["idor", "information-disclosure", "static-files", "predictable-ids"]
 difficulty: apprentice
+shortDescription: "Krótki write-up z labu PortSwigger pokazujący IDOR na statycznych plikach z przewidywalnym identyfikatorem, gdzie brak autoryzacji przy pobieraniu transkryptów prowadzi do wycieku hasła i przejęcia konta innego użytkownika."
 updatedAt: "2026-02-18"
 ---
 

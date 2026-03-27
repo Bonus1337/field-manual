@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["idor", "horizontal-privilege-escalation", "redirect", "information-disclosure"]
 difficulty: apprentice
+shortDescription: "Write-up z labu PortSwigger pokazujący nietypowy wariant IDOR, w którym aplikacja próbuje maskować brak autoryzacji redirectem, ale mimo to zwraca w body wrażliwe dane innego użytkownika - w tym przypadku klucz API możliwy do wyciągnięcia tylko na poziomie surowego HTTP."
 updatedAt: "2026-02-18"
 ---
 

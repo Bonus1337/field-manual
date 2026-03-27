@@ -5,6 +5,7 @@ team: red
 category: eJPT
 tags: ["nmap", "nse", "metasploit", "ftp", "smb", "http", "mysql", "ssh", "smtp"]
 difficulty: easy
+shortDescription: "Przekrojowy materiał na temat enumeration w kontekście pentestów i przygotowania do eJPT, zawierający workflow pracy, checklisty dla najczęściej spotykanych usług oraz podejście analityczne ukierunkowane na przekształcanie wyników skanowania w użyteczne hipotezy ataku."
 updatedAt: "2026-03-08"
 ---
 

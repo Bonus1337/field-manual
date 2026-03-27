@@ -5,6 +5,7 @@ team: red
 category: eJPT
 tags: ["recon", "passive", "active", "nmap", "dns", "osint", "whois", "subdomain", "ejpt"]
 difficulty: easy
+shortDescription: "Kompleksowy materiał na temat information gathering w kontekście pentestów oraz przygotowania do eJPT, obejmujący metody passive i active recon, analizę źródeł OSINT, DNS, subdomen, technologii oraz aktywne techniki skanowania i profilowania celu, które stanowią podstawę do dalszej enumeracji."
 updatedAt: "2025-03-06"
 ---
 

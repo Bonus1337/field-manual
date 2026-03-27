@@ -5,6 +5,7 @@ team: red
 category: eJPT
 tags: ["nmap", "scanning", "host-discovery", "port-scan", "fingerprinting", "evasion"]
 difficulty: easy
+shortDescription: "A comprehensive guide to footprinting and scanning in the context of penetration testing and preparation for the eJPT, featuring a structured overview of host discovery, port scanning, service and system fingerprinting, NSE scripts, evasion techniques, and guidelines for interpreting results."
 updatedAt: "2025-03-07"
 ---
 

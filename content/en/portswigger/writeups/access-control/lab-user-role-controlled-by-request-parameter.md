@@ -6,6 +6,7 @@ category: portswigger writeups
 chapter: access-control
 tags: ["portswigger", "access-control", "cookie", "role-tampering", "misconfiguration"]
 difficulty: apprentice
+shortDescription: "A practical PortSwigger lab write-up showing how a seemingly harmless Admin cookie turns into full privilege escalation when the application trusts a user-controlled value and uses it to grant access to administrative functionality."
 updatedAt: "2026-02-17"
 ---
 
