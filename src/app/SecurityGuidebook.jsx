@@ -2511,7 +2511,7 @@ export default function SecurityGuidebook() {
               margin: "0 auto",
               padding: "32px 24px 48px",
               display: "grid",
-              gridTemplateColumns: "1fr 240px",
+              gridTemplateColumns: isDesktop ? "1fr 240px" : "1fr",
               gap: "40px",
             }}
           >
@@ -2662,7 +2662,7 @@ export default function SecurityGuidebook() {
               </div>
             </article>
 
-            <aside style={{ display: "block" }}>
+            <aside style={{ display: isDesktop ? "block" : "none" }}>
               <div
                 style={{
                   position: "sticky",
