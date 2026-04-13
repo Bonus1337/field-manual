@@ -1,6 +1,6 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import SecurityGuidebook from "./SecurityGuidebook.jsx";
+import SecurityGuidebook from "./SecurityGuidebook";
 
 export default function App() {
   return (

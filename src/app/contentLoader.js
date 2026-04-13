@@ -80,7 +80,6 @@ function parseFrontmatter(raw) {
     const key = trimmed.slice(0, idx).trim();
     let value = trimmed.slice(idx + 1).trim();
 
-    // inline array: tags: ["a", "b"]
     if (value.startsWith("[") && value.endsWith("]")) {
       data[key] = parseInlineArray(value);
       continue;
