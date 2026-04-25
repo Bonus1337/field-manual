@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { T } from "../constants/theme";
 
-export function CodeBlock({ code, language }) {
+export function CodeBlock({ code, language, wrap = false }) {
   const [copied, setCopied] = useState(false);
+
+  const value = String(code || "").trim();
 
   const onCopy = async () => {
     try {
-      await navigator.clipboard.writeText(String(code || "").trim());
+      await navigator.clipboard.writeText(value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
@@ -24,6 +26,8 @@ export function CodeBlock({ code, language }) {
         background: "#030507",
         overflow: "hidden",
         fontFamily: T.mono,
+        maxWidth: "100%",
+        minWidth: 0,
       }}
     >
       <div
@@ -31,17 +35,36 @@ export function CodeBlock({ code, language }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: "12px",
           padding: "8px 14px",
           borderBottom: `1px solid ${T.border}`,
           background: T.bgCard,
+          minWidth: 0,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-          <span style={{ color: "#ff5f57", fontSize: "9px" }}>●</span>
-          <span style={{ color: "#febc2e", fontSize: "9px" }}>●</span>
-          <span style={{ color: "#28c840", fontSize: "9px" }}>●</span>
-          <span style={{ color: T.textMuted, fontSize: "11px", marginLeft: "8px" }}>
-            {language || "bash"}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "7px",
+            minWidth: 0,
+          }}
+        >
+          <span style={{ color: "#ff5f57", fontSize: "9px", flexShrink: 0 }}>●</span>
+          <span style={{ color: "#febc2e", fontSize: "9px", flexShrink: 0 }}>●</span>
+          <span style={{ color: "#28c840", fontSize: "9px", flexShrink: 0 }}>●</span>
+
+          <span
+            style={{
+              color: T.textMuted,
+              fontSize: "11px",
+              marginLeft: "8px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {language || "text"}
           </span>
         </div>
 
@@ -60,6 +83,7 @@ export function CodeBlock({ code, language }) {
             fontSize: "11px",
             cursor: "pointer",
             transition: "color 0.1s",
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = T.textBright)}
           onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
@@ -71,15 +95,31 @@ export function CodeBlock({ code, language }) {
 
       <pre
         style={{
-          overflowX: "auto",
           padding: "18px 20px",
           margin: 0,
           fontSize: "13px",
           lineHeight: "1.75",
+          maxWidth: "100%",
+          minWidth: 0,
+
+          overflowX: wrap ? "hidden" : "auto",
+          whiteSpace: wrap ? "pre-wrap" : "pre",
+          overflowWrap: wrap ? "anywhere" : "normal",
+          wordBreak: wrap ? "break-word" : "normal",
         }}
       >
-        <code style={{ fontFamily: T.mono, color: T.cyan }}>
-          {String(code || "").trim()}
+        <code
+          style={{
+            display: "block",
+            fontFamily: T.mono,
+            color: T.cyan,
+            whiteSpace: "inherit",
+            overflowWrap: "inherit",
+            wordBreak: "inherit",
+            minWidth: 0,
+          }}
+        >
+          {value}
         </code>
       </pre>
     </div>

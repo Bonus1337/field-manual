@@ -110,6 +110,24 @@ export function Markdown({ content }) {
     );
   };
 
+  const shouldWrapCodeBlock = (language) => {
+    const lang = String(language || "").toLowerCase();
+
+    const noWrapLanguages = new Set([
+      "bash",
+      "sh",
+      "shell",
+      "zsh",
+      "powershell",
+      "ps1",
+      "cmd",
+      "terminal",
+      "console",
+    ]);
+
+    return !noWrapLanguages.has(lang);
+  };
+
   return (
     <div style={baseStyle}>
       <ReactMarkdown
@@ -316,6 +334,7 @@ export function Markdown({ content }) {
             const raw = String(children ?? "");
             const trimmed = raw.replace(/\n$/, "");
             const match = /language-([\w-]+)/.exec(className || "");
+            const language = match?.[1];
 
             if (inline) {
               return (
@@ -328,6 +347,9 @@ export function Markdown({ content }) {
                     padding: "1px 6px",
                     fontSize: "0.9em",
                     color: T.cyan,
+                    whiteSpace: "break-spaces",
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
                   }}
                 >
                   {raw}
@@ -335,7 +357,7 @@ export function Markdown({ content }) {
               );
             }
 
-            if (!match?.[1] && !trimmed.includes("\n") && trimmed.trim().length <= 120) {
+            if (!language && !trimmed.includes("\n") && trimmed.trim().length <= 120) {
               return (
                 <code
                   style={{
@@ -347,8 +369,11 @@ export function Markdown({ content }) {
                     padding: "3px 10px",
                     fontSize: "0.88em",
                     color: T.cyan,
-                    overflowX: "auto",
                     maxWidth: "100%",
+                    whiteSpace: "pre-wrap",
+                    overflowWrap: "anywhere",
+                    wordBreak: "break-word",
+                    overflowX: "hidden",
                   }}
                 >
                   {trimmed.trim()}
@@ -356,7 +381,13 @@ export function Markdown({ content }) {
               );
             }
 
-            return <CodeBlock code={raw} language={match?.[1]} />;
+            return (
+              <CodeBlock
+                code={raw}
+                language={language}
+                wrap={shouldWrapCodeBlock(language)}
+              />
+            );
           },
         }}
       >
