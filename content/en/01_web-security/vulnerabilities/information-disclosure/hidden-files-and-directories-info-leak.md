@@ -1,0 +1,287 @@
+---
+id: hidden-files-and-directories-info-leak
+title: "Hidden Directories and Files as a Silent Information Leak"
+team: red
+domain: web-security
+section: vulnerabilities
+type: knowledge
+angle: attacker-mindset
+sourceTrack: baw
+tags: ["recon", "web", "git", "svn", "ide", "misconfiguration", "info-leak"]
+difficulty: medium
+shortDescription: "The most dangerous leaks in web applications do not always start with remote code execution or SQL Injection. Sometimes they start with a single forgotten file that reveals more about the system than all fingerprinting combined."
+updatedAt: "2026-04-02"
+---
+
+# Hidden Directories and Files as a Silent Information Leak
+
+During web reconnaissance, it is easy to fall into the trap of thinking that the real work only begins when you reach “active” vulnerabilities. SQL Injection, Server-Side Request Forgery, file upload abuse, insecure deserialization, account takeover.
+
+Then comes the moment when you realize the real advantage did not come from a clever payload at all, but from the fact that someone left traces of their work on the server.
+
+That is what makes this topic so powerful. An application may look well locked down from the outside, while at the same time exposing artifacts nearby that reveal its architecture, technology stack, change history, file structure, dependencies, and sometimes even secrets.
+
+These are not just random development leftovers.
+
+Very often, they are a side channel into understanding the application.
+
+## The biggest mindset shift
+
+A hidden directory or a single file is not just a curiosity.
+
+It can be a shortcut to the entire operating model of the system.
+
+In practice, that means that instead of guessing:
+
+- what stack the application uses,
+- where sensitive features may live,
+- how modules are named,
+- whether the backend talks to SQL or something else,
+- what the build pipeline looks like,
+- where the developer stored database connections,
+
+you may simply get those answers almost for free.
+
+Sometimes one exposed file says more than half an hour of traditional enumeration.
+
+## .git and .svn are not “weird folders” - they are the project’s memory
+
+If `.git` is left on the server, this is no longer a small leak. This is a potential doorway into the project history, repository objects, and eventually the source code itself.
+
+That matters a lot from a mindset perspective. An exposed `.git` does not just mean “there is Git here.”
+
+It means the server may be exposing the internal memory of the project.
+
+Suddenly, you are no longer limited to pure black-box testing.
+
+You may gain visibility into:
+
+- the application structure,
+- file names,
+- older versions of logic,
+- comments,
+- accidentally committed secrets,
+- functions that are not even visible from the front end.
+
+A very important detail here is the HTTP response itself. You do not need a full directory listing. Sometimes a simple `403 Forbidden` on `/.git/` already tells you enough. That is not a wall. That is confirmation that the resource exists.
+
+And details like that are what separate mechanical scanning from actually thinking like a pentester.
+
+## .gitignore is not garbage - it is a map of what you cannot see yet
+
+This is one of those things that looks trivial at first and becomes much more valuable once you slow down and think.
+
+`.gitignore` does not give you file contents, but it gives you something nearly as useful: a list of things that probably exist, but were excluded from version control or will not be recoverable through the same path.
+
+In practice, that gives you:
+
+- hints about backups,
+- names of working directories,
+- environment-related files,
+- local configuration files,
+- temporary artifacts,
+- locations worth checking through other methods.
+
+It is almost like a photographic negative. It does not show everything directly, but it shows you where to look next.
+
+## SVN is a reminder that older technologies can still leak a lot
+
+With `.svn`, one thing becomes very clear: a technology may be old, but if it still exists on a server, it still has offensive value.
+
+What matters here is not just the presence of the directory itself, but what operational value comes from it:
+
+- the `wc.db` database,
+- hashes,
+- file mappings,
+- the `pristine` directory,
+- possible paths to actual project files,
+- sometimes even the address of the central repository.
+
+At that point, this is no longer “metadata leakage.”
+
+This is leaked material that can support the next stage of the attack.
+
+And it is a very good lesson: even if you cannot pull everything down with one command, that does not mean the opportunity is gone. Sometimes you just need to break the problem into smaller pieces and recover the knowledge step by step.
+
+## IDE files can reveal more than the application itself
+
+This was one of the strongest takeaways for me: integrated development environment files are often not cosmetic leftovers, but a full context dump of how the project was being worked on.
+
+Directories such as `.idea` or `nbproject` can reveal:
+
+- directory structure,
+- file names,
+- local change history,
+- information about the version control system in use,
+- task descriptions,
+- traces of the architecture,
+- and sometimes even database connection details.
+
+That changes how you think about leakage.
+
+Because now it is not just “I found a config file.”
+
+It becomes “I gained visibility into how the developer thought about the project.”
+
+And that can be incredibly valuable:
+
+- module names may suggest business functions,
+- task entries may suggest what was changed,
+- changelists may reveal older paths,
+- database configs may expose hosts, ports, schema names, and sometimes even credentials.
+
+In practice, a leak like this can shorten reconnaissance more effectively than aggressive directory brute forcing.
+
+## package.json and similar files narrow your hypotheses
+
+This part is heavily underrated.
+
+People often look at `package.json`, `.npmrc`, `.eslintrc`, `.bowerrc`, `config.yml`, or `config.xml` and just see project files.
+
+A pentester should see:
+
+- technology fingerprinting,
+- dependency inventory,
+- potentially outdated libraries,
+- direction for further testing,
+- a way to narrow the attack space.
+
+If you know the backend dependencies, you stop testing blindly.
+
+You stop trying everything everywhere.
+
+You start building sensible hypotheses.
+
+A practical example:
+
+- if you know the application talks to MySQL, you prioritize differently than you would with MongoDB,
+- if you see WebSockets, you start thinking about an additional attack surface,
+- if dependencies are old, you may check for known classes of issues,
+- if the build uses specific tooling, you understand better how code reaches production.
+
+That saves a lot of time.
+
+## CI/CD files often reveal the deployment logic
+
+`.gitlab-ci.yml` is a great example of a file that may look like a technical detail but can actually serve as a map of the deployment process.
+
+Such a file may reveal:
+
+- how the application is built,
+- what commands are executed,
+- what deployment stages exist,
+- what environments are used,
+- how internal components are named,
+- what secrets or tokens were expected in the process.
+
+From an offensive point of view, this matters a lot because the weakest point is not always inside the request/response cycle. Sometimes it lives in the process surrounding the application.
+
+## database.yml and similar files are often simply game over
+
+Some files do not require much philosophy.
+
+They are just critical.
+
+If something like `database.yml` or another plaintext database configuration file is exposed, the situation stops being interesting and becomes very direct.
+
+This is a good reminder that not every leak needs to be framed as a “useful hint.”
+
+Some leaks are simply a direct collapse of the security model.
+
+## .DS_Store is a reminder that unusual artifacts still matter
+
+This is a very good humility check.
+
+Because it is easy to build a mental list of “serious” findings: `.git`, `.svn`, config files, IDE artifacts.
+
+Then it turns out that a simple `.DS_Store` file may expose file and directory names that your standard wordlist would never discover.
+
+That shows one very important thing:
+
+not everything that looks harmless is low value.
+
+Sometimes those strange background files are the best source of unusual enumeration data.
+
+## The strongest offensive takeaway
+
+Real reconnaissance is not only about finding endpoints.
+
+It is about finding traces of the application creation process.
+
+Because a web application is not just what answers on `/login` and `/api/users`.
+
+It is also:
+
+- the repository,
+- the build process,
+- the IDE environment,
+- temporary files,
+- backups,
+- operating system artifacts,
+- change history,
+- deployment mistakes.
+
+The sooner you start looking at the application as a product with its full development footprint, the sooner reconnaissance stops being guesswork and starts becoming analysis.
+
+## My practical thinking workflow
+
+When I look at an application, I immediately assume that alongside the business logic there is also a shadow layer:
+
+- things left by accident,
+- technical leftovers,
+- unfinished pieces,
+- things the team assumed were invisible.
+
+And that is often where the advantage lives.
+
+So mentally I reduce it to a few questions:
+
+1. Are there traces of version control on the server?
+2. Are there IDE artifacts or local development leftovers?
+3. Are there files that reveal dependencies and the stack?
+4. Are there system files or backups that expose resource names?
+5. Can those metadata points narrow my next testing hypotheses?
+
+That approach makes reconnaissance much more structured.
+
+Instead of “I am looking for anything,” it becomes:
+
+“I am looking for traces that will tell me exactly where to hit next.”
+
+## The trap that is easy to fall into
+
+The worst thing you can do is treat findings like this as an interesting curiosity and then go back to fuzzing without extracting any conclusions.
+
+Because the value of `.git`, `.idea`, `package.json`, or `.DS_Store` does not sit only in the fact that they exist.
+
+The real value is in how much they reshape the next decisions:
+
+- what to test,
+- what not to test,
+- where to look for secrets,
+- what technology to expect,
+- which paths deserve priority.
+
+Finding the file is only the beginning.
+
+The real work starts with interpretation.
+
+## Takeaway
+
+One of the biggest mistakes in assessing the security of an application is looking only at the “official” attack surface.
+
+Very often, the login form does not reveal the most.
+
+Not the user panel.
+Not the API.
+
+But the things left beside them.
+
+A forgotten directory.
+A file from the development process.
+A configuration file that “should not be there.”
+An artifact that for the developer was just background noise, but for the pentester becomes a map.
+
+And that is exactly why hidden directories and files are not just an add-on to reconnaissance.
+
+Very often, they are the reconnaissance.

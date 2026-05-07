@@ -1,0 +1,507 @@
+---
+id: path-traversal-directory-traversal-introduction
+title: "Path Traversal: kiedy aplikacja ufa ścieżce podanej przez użytkownika"
+team: red
+domain: web-security
+section: vulnerabilities
+type: knowledge
+angle: attacker-mindset
+sourceTrack: baw
+tags: ["file-read", "lfi", "filesystem", "url-encoding", "upload", "web"]
+difficulty: easy
+shortDescription: "Wprowadzenie do podatności Path Traversal: czym jest, skąd się bierze, dlaczego jest groźna i jak rozumieć ją od strony działania aplikacji, a nie tylko gotowych payloadów."
+updatedAt: "2026-04-26"
+---
+
+# Path Traversal: kiedy aplikacja ufa ścieżce podanej przez użytkownika
+
+Path Traversal to podatność, która pojawia się wtedy, gdy aplikacja pozwala użytkownikowi wpływać na ścieżkę do pliku lub katalogu, a następnie wykorzystuje tę ścieżkę bez odpowiedniej kontroli.
+
+Najprościej mówiąc: aplikacja miała pozwolić użytkownikowi pobrać jeden konkretny plik, ale przez błąd w logice pozwala mu sięgnąć po pliki znajdujące się gdzie indziej w systemie.
+
+To może brzmieć technicznie, ale sama idea jest prosta.
+
+Aplikacja zakłada:
+
+> „Użytkownik poda nazwę pliku, który znajduje się w dozwolonym katalogu”.
+
+Atakujący sprawdza:
+
+> „A co jeśli zamiast nazwy pliku podam ścieżkę, która wyjdzie poza ten katalog?”.
+
+I właśnie tu zaczyna się Path Traversal.
+
+---
+
+## Czym jest Path Traversal?
+
+Path Traversal, nazywany też Directory Traversal albo dot-dot-slash attack, polega na manipulowaniu ścieżką do pliku w taki sposób, aby aplikacja odwołała się do zasobu, do którego użytkownik normalnie nie powinien mieć dostępu.
+
+Najbardziej charakterystycznym elementem tej podatności jest sekwencja:
+
+```text
+../
+```
+
+Oznacza ona:
+
+```text
+przejdź jeden katalog wyżej
+```
+
+Jeżeli aplikacja pozwala użytkownikowi kontrolować część ścieżki, można próbować używać takich sekwencji, aby wyjść poza katalog przewidziany przez programistę.
+
+Przykładowo aplikacja może zakładać, że użytkownik pobiera plik z katalogu:
+
+```text
+/app/documents/
+```
+
+Ale jeśli użytkownik poda wartość zawierającą `../`, aplikacja może zostać zmuszona do wyjścia wyżej w strukturze katalogów.
+
+---
+
+## Dlaczego ta podatność powstaje?
+
+Path Traversal najczęściej wynika z błędnego założenia, że dane podane przez użytkownika są „tylko nazwą pliku”.
+
+Przykład uproszczonej logiki:
+
+```php
+readfile("documents/" . $_GET["file"]);
+```
+
+Na pierwszy rzut oka wygląda to niewinnie.
+
+Aplikacja ma katalog `documents/`, a użytkownik podaje nazwę pliku do pobrania.
+
+Przykład normalnego użycia:
+
+```http
+GET /download?file=regulamin.pdf
+```
+
+Wtedy aplikacja próbuje odczytać:
+
+```text
+documents/regulamin.pdf
+```
+
+Problem pojawia się wtedy, gdy użytkownik nie poda zwykłej nazwy pliku, tylko fragment ścieżki:
+
+```http
+GET /download?file=../../../../etc/passwd
+```
+
+Wtedy aplikacja może próbować odczytać coś w stylu:
+
+```text
+documents/../../../../etc/passwd
+```
+
+System operacyjny interpretuje `../` jako przejście katalog wyżej. W efekcie aplikacja może wyjść poza katalog `documents/` i spróbować odczytać plik systemowy.
+
+To jest sedno podatności.
+
+Problemem nie jest sama obecność funkcji odczytu pliku. Problemem jest to, że aplikacja pozwala użytkownikowi decydować, jaki plik zostanie odczytany.
+
+---
+
+## Co może kontrolować użytkownik?
+
+Path Traversal nie musi występować wyłącznie w parametrze o nazwie `file`.
+
+Podatność może pojawić się wszędzie tam, gdzie aplikacja wykonuje operacje na plikach lub katalogach, a część tej operacji zależy od danych wejściowych użytkownika.
+
+Przykładowe miejsca ryzyka:
+
+- pobieranie dokumentów,
+- podgląd załączników,
+- wybór języka interfejsu,
+- wybór motywu graficznego,
+- ładowanie szablonów,
+- generowanie raportów,
+- eksport plików,
+- wgrywanie plików,
+- odczyt logów,
+- renderowanie plików statycznych.
+
+W praktyce warto zwracać uwagę na parametry, które wyglądają jak nazwa pliku, katalogu, szablonu albo zasobu.
+
+Przykłady nazw parametrów:
+
+```text
+file
+path
+page
+template
+theme
+lang
+locale
+document
+download
+image
+```
+
+Nie oznacza to automatycznie podatności. To tylko sygnał, że aplikacja może używać tych wartości do operacji na plikach.
+
+---
+
+## Dlaczego Path Traversal jest groźny?
+
+Na pierwszy rzut oka Path Traversal może wyglądać jak „tylko odczyt pliku”.
+
+W rzeczywistości skutki mogą być znacznie poważniejsze.
+
+### 1. Ujawnienie plików systemowych
+
+Atakujący może próbować odczytać pliki, które zdradzają informacje o systemie operacyjnym, użytkownikach lub konfiguracji środowiska.
+
+Klasycznym przykładem w systemach Linux jest:
+
+```text
+/etc/passwd
+```
+
+Ten plik nie zawiera haseł wprost w nowoczesnych systemach, ale może ujawnić istniejących użytkowników, ścieżki katalogów domowych i informacje o środowisku.
+
+### 2. Ujawnienie konfiguracji aplikacji
+
+To często znacznie groźniejszy scenariusz niż odczyt pliku systemowego.
+
+Pliki konfiguracyjne mogą zawierać:
+
+- dane dostępowe do bazy danych,
+- sekrety aplikacji,
+- tokeny API,
+- klucze do usług zewnętrznych,
+- adresy usług wewnętrznych,
+- informacje o trybie debugowania,
+- ścieżki do innych zasobów.
+
+Przykładem pliku, który często bywa interesujący w aplikacjach webowych, jest:
+
+```text
+.env
+```
+
+Jeżeli aplikacja pozwala odczytać taki plik, podatność może prowadzić do dalszego przejęcia aplikacji lub dostępu do innych usług.
+
+### 3. Ujawnienie struktury aplikacji
+
+Nawet jeśli nie uda się odczytać sekretów, Path Traversal może zdradzić strukturę katalogów i plików.
+
+Taka wiedza pomaga zrozumieć:
+
+- gdzie znajduje się aplikacja,
+- jakiego frameworka używa,
+- gdzie są logi,
+- gdzie są backupy,
+- jak wygląda struktura wdrożenia,
+- czy na serwerze znajdują się inne aplikacje.
+
+To zwiększa powierzchnię dalszego ataku.
+
+### 4. Możliwość eskalacji do wykonania kodu
+
+Path Traversal nie zawsze ogranicza się do odczytu.
+
+Jeżeli podatność występuje w funkcji uploadu i użytkownik może wpływać na ścieżkę zapisu pliku, problem robi się poważniejszy.
+
+W takim scenariuszu atakujący może próbować zapisać plik poza dozwolonym katalogiem, na przykład w miejscu dostępnym z poziomu serwera [WWW](http://WWW).
+
+Jeżeli dodatkowo serwer wykonuje taki plik jako kod, podatność może prowadzić do zdalnego wykonania kodu.
+
+To nie jest domyślny skutek każdego Path Traversal, ale jest to jeden z możliwych scenariuszy przy błędnej konfiguracji aplikacji i serwera.
+
+---
+
+## Path Traversal a LFI
+
+Path Traversal często pojawia się obok pojęcia LFI, czyli Local File Inclusion.
+
+Warto rozdzielić te dwa pojęcia.
+
+Path Traversal oznacza manipulację ścieżką w celu wyjścia poza dozwolony katalog.
+
+LFI oznacza sytuację, w której aplikacja dołącza lokalny plik jako część wykonywanej logiki aplikacji.
+
+Przykład odczytu pliku:
+
+```php
+readfile($_GET["file"]);
+```
+
+To bardziej kojarzy się z Path Traversal i nieautoryzowanym odczytem plików.
+
+Przykład dołączania pliku:
+
+```php
+include($_GET["page"]);
+```
+
+To może prowadzić do LFI, ponieważ aplikacja nie tylko odczytuje plik, ale próbuje go załadować jako część kodu lub widoku.
+
+W praktyce te podatności mogą się łączyć. Path Traversal może być techniką, która pozwala dotrzeć do pliku używanego później w Local File Inclusion.
+
+---
+
+## Prosty przykład ataku
+
+Załóżmy, że aplikacja ma endpoint:
+
+```http
+GET /download?file=invoice.pdf
+```
+
+Aplikacja zakłada, że plik znajduje się w katalogu:
+
+```text
+documents/
+```
+
+Normalnie odczytywany jest więc plik:
+
+```text
+documents/invoice.pdf
+```
+
+Atakujący może spróbować:
+
+```http
+GET /download?file=../../../../etc/passwd
+```
+
+Jeżeli aplikacja nie sprawdza finalnej ścieżki, może spróbować odczytać:
+
+```text
+documents/../../../../etc/passwd
+```
+
+Po normalizacji ścieżki może to wskazywać na:
+
+```text
+/etc/passwd
+```
+
+Jeżeli odpowiedź zawiera fragmenty tego pliku, podatność jest potwierdzona.
+
+Przykładowy sygnał:
+
+```text
+root:x:0:0:
+daemon:x:
+www-data:x:
+```
+
+---
+
+## Dlaczego samo blokowanie `../` nie wystarcza?
+
+Częstym błędem jest próba zabezpieczenia aplikacji przez usuwanie podejrzanych fragmentów tekstu.
+
+Na przykład aplikacja może usuwać każde wystąpienie:
+
+```text
+../
+```
+
+Problem polega na tym, że takie filtrowanie jest kruche.
+
+Atakujący może spróbować użyć innej reprezentacji tego samego znaku lub tej samej logiki ścieżki.
+
+Przykłady wariantów:
+
+```text
+%2e%2e%2f
+..%2f
+..%5c
+```
+
+Wszystkie mogą reprezentować próbę przejścia katalog wyżej, zależnie od sposobu dekodowania i systemu operacyjnego.
+
+Jeszcze inny problem pojawia się wtedy, gdy aplikacja usuwa `../` tylko raz. Wtedy specjalnie ułożony ciąg może po usunięciu fragmentu nadal utworzyć niebezpieczną ścieżkę.
+
+Dlatego zabezpieczenie oparte na czarnej liście jest słabe. Nie chodzi o to, żeby blokować kilka znanych payloadów. Chodzi o to, żeby aplikacja nigdy nie pozwalała użytkownikowi decydować o finalnej ścieżce do pliku.
+
+---
+
+## Jak poprawnie chronić aplikację?
+
+Najbezpieczniejsze podejście polega na tym, aby użytkownik nie przekazywał ścieżki do pliku.
+
+Zamiast tego powinien przekazywać identyfikator.
+
+Zamiast:
+
+```http
+GET /download?file=invoice.pdf
+```
+
+lepiej:
+
+```http
+GET /download?id=123
+```
+
+Aplikacja po stronie serwera sama mapuje identyfikator na konkretny plik:
+
+```text
+123 -> /safe/storage/invoice-123.pdf
+```
+
+Użytkownik nie wie, gdzie fizycznie leży plik i nie może manipulować ścieżką.
+
+Dobre praktyki:
+
+- nie przyjmować pełnych ścieżek od użytkownika,
+- używać identyfikatorów zamiast nazw plików,
+- stosować białą listę dozwolonych wartości,
+- normalizować ścieżkę przed użyciem,
+- sprawdzać, czy finalna ścieżka nadal znajduje się w dozwolonym katalogu,
+- ograniczać uprawnienia procesu aplikacji,
+- trzymać uploady poza katalogiem wykonywanym przez serwer WWW,
+- ignorować nazwę pliku przesłaną przez użytkownika przy uploadzie,
+- generować własne nazwy plików po stronie serwera.
+
+---
+
+## Jak myśleć o tej podatności jako pentester?
+
+Podczas testowania nie zaczynaj od pytania:
+
+> „Jaki payload wkleić?”.
+
+Zacznij od pytania:
+
+> „Czy użytkownik ma wpływ na coś, co aplikacja potraktuje jako ścieżkę?”.
+
+To jest najważniejszy punkt.
+
+Jeżeli widzisz parametr typu:
+
+```text
+file=...
+template=...
+lang=...
+path=...
+download=...
+```
+
+to nie oznacza jeszcze podatności, ale oznacza miejsce warte sprawdzenia.
+
+Następnie pytasz:
+
+1. Czy ta wartość wygląda jak nazwa pliku?
+2. Czy aplikacja zwraca zawartość pliku?
+3. Czy błąd zdradza lokalną ścieżkę?
+4. Czy można wyjść poza katalog bazowy?
+5. Czy aplikacja używa blacklisty zamiast whitelisty?
+6. Czy aplikacja dodaje rozszerzenie do pliku?
+7. Czy funkcja dotyczy odczytu, zapisu czy dołączania pliku?
+
+Takie pytania są ważniejsze niż pamiętanie dziesiątek payloadów.
+
+---
+
+## Minimalny zestaw testów do zrozumienia
+
+Na poziomie podstawowym wystarczy znać kilka przykładów.
+
+Linux:
+
+```text
+../../../../etc/passwd
+```
+
+Windows:
+
+```text
+..\..\..\Windows\win.ini
+```
+
+URL encoded:
+
+```text
+%2e%2e%2f%2e%2e%2fetc%2fpasswd
+```
+
+Plik konfiguracyjny aplikacji:
+
+```text
+../../../../.env
+```
+
+To nie jest kompletna lista testów. To tylko przykłady, które pomagają zrozumieć mechanizm.
+
+W prawdziwym teście dobór payloadu zależy od aplikacji, systemu operacyjnego, frameworka, sposobu routingu, filtrów i tego, jak aplikacja buduje ścieżkę.
+
+---
+
+## Co jest dowodem podatności?
+
+Najlepszym dowodem jest odpowiedź aplikacji zawierająca treść pliku, którego użytkownik nie powinien móc odczytać.
+
+Przykład dla Linuxa:
+
+```text
+root:x:0:0:
+daemon:x:
+www-data:x:
+```
+
+Przykład dla Windowsa:
+
+```text
+[fonts]
+[extensions]
+```
+
+Słabszym, ale nadal ważnym sygnałem, może być błąd zawierający lokalną ścieżkę:
+
+```text
+failed to open stream: No such file or directory in /var/www/app/download.php
+```
+
+Taki błąd nie zawsze potwierdza pełną podatność, ale pokazuje, że aplikacja prawdopodobnie używa wartości użytkownika w operacji na pliku.
+
+---
+
+## Najważniejsze do zapamiętania
+
+Path Traversal to nie jest „atak na `/etc/passwd`”.
+
+To podatność wynikająca z błędnego zaufania do ścieżki kontrolowanej przez użytkownika.
+
+Jeżeli aplikacja skleja katalog bazowy z wartością podaną przez użytkownika i nie sprawdza finalnej ścieżki, użytkownik może próbować wyjść poza dozwolony katalog.
+
+Skutkiem może być:
+
+- odczyt plików systemowych,
+- odczyt konfiguracji aplikacji,
+- ujawnienie sekretów,
+- poznanie struktury systemu,
+- rozszerzenie powierzchni ataku,
+- w szczególnych przypadkach zapis pliku poza dozwolonym katalogiem i wykonanie kodu.
+
+Najlepsza ochrona to nie blokowanie pojedynczych payloadów, ale zmiana modelu:
+
+> użytkownik nie podaje ścieżki, tylko identyfikator zasobu, a aplikacja sama decyduje, do którego pliku ma dostęp.
+
+---
+
+## Esencja
+
+Programista myśli:
+
+```text
+Użytkownik poda nazwę pliku.
+```
+
+Pentester pyta:
+
+```text
+Czy mogę sprawić, żeby ta nazwa stała się ścieżką?
+```
+
+I właśnie w tej różnicy mieści się cała podatność Path Traversal.

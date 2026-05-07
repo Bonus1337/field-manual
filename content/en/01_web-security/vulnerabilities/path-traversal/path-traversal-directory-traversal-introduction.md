@@ -1,0 +1,507 @@
+---
+id: path-traversal-directory-traversal-introduction
+title: "Path Traversal: when an application trusts a user-controlled path"
+team: red
+domain: web-security
+section: vulnerabilities
+type: knowledge
+angle: attacker-mindset
+sourceTrack: baw
+tags: ["path-traversal", "directory-traversal", "lfi", "file-read", "web", "filesystem"]
+difficulty: easy
+shortDescription: "An introduction to Path Traversal: what it is, where it comes from, why it is dangerous, and how to understand it from the application logic perspective, not only through ready-made payloads."
+updatedAt: "2026-04-26"
+---
+
+# Path Traversal: when an application trusts a user-controlled path
+
+Path Traversal is a vulnerability that appears when an application lets the user influence a file or directory path, and then uses that path without proper control.
+
+In simple terms: the application was supposed to let the user download one specific file, but because of a logic flaw, it allows them to reach files located elsewhere in the system.
+
+This may sound technical, but the core idea is simple.
+
+The application assumes:
+
+> “The user will provide the name of a file located inside the allowed directory.”
+
+The attacker checks:
+
+> “What if, instead of a filename, I provide a path that escapes that directory?”
+
+And this is where Path Traversal begins.
+
+---
+
+## What is Path Traversal?
+
+Path Traversal, also known as Directory Traversal or a dot-dot-slash attack, is based on manipulating a file path so that the application accesses a resource the user should not normally be able to access.
+
+The most characteristic sequence used in this vulnerability is:
+
+```text
+../
+```
+
+It means:
+
+```text
+go one directory up
+```
+
+If the application allows the user to control part of a path, these sequences can be used to try to escape the directory intended by the developer.
+
+For example, the application may assume that the user is downloading a file from:
+
+```text
+/app/documents/
+```
+
+But if the user provides a value containing `../`, the application may be forced to move higher in the directory structure.
+
+---
+
+## Why does this vulnerability happen?
+
+Path Traversal usually comes from the wrong assumption that user-provided data is “just a filename”.
+
+A simplified example of vulnerable logic:
+
+```php
+readfile("documents/" . $_GET["file"]);
+```
+
+At first glance, this may look harmless.
+
+The application has a `documents/` directory, and the user provides the name of the file to download.
+
+Normal usage:
+
+```http
+GET /download?file=terms.pdf
+```
+
+The application then tries to read:
+
+```text
+documents/terms.pdf
+```
+
+The problem appears when the user does not provide a normal filename, but a path fragment:
+
+```http
+GET /download?file=../../../../etc/passwd
+```
+
+The application may then try to read something like:
+
+```text
+documents/../../../../etc/passwd
+```
+
+The operating system interprets `../` as moving one directory up. As a result, the application may escape the `documents/` directory and attempt to read a system file.
+
+That is the core of the vulnerability.
+
+The problem is not the existence of a file-reading function itself. The problem is that the application lets the user decide which file will be read.
+
+---
+
+## What can the user control?
+
+Path Traversal does not have to appear only in a parameter named `file`.
+
+The vulnerability can appear anywhere the application performs operations on files or directories, and part of that operation depends on user input.
+
+Common risky areas include:
+
+- downloading documents,
+- previewing attachments,
+- choosing an interface language,
+- choosing a visual theme,
+- loading templates,
+- generating reports,
+- exporting files,
+- uploading files,
+- reading logs,
+- rendering static files.
+
+In practice, it is worth paying attention to parameters that look like a filename, directory name, template name, or resource name.
+
+Example parameter names:
+
+```text
+file
+path
+page
+template
+theme
+lang
+locale
+document
+download
+image
+```
+
+This does not automatically mean the application is vulnerable. It only means the application may be using these values in file operations.
+
+---
+
+## Why is Path Traversal dangerous?
+
+At first, Path Traversal may look like “just file reading”.
+
+In reality, the impact can be much more serious.
+
+### 1. Disclosure of system files
+
+An attacker may try to read files that reveal information about the operating system, users, or environment configuration.
+
+A classic example on Linux systems is:
+
+```text
+/etc/passwd
+```
+
+In modern systems, this file does not contain plaintext passwords, but it can reveal existing users, home directory paths, and information about the environment.
+
+### 2. Disclosure of application configuration
+
+This is often a much more dangerous scenario than reading a system file.
+
+Configuration files may contain:
+
+- database credentials,
+- application secrets,
+- API tokens,
+- keys for external services,
+- internal service addresses,
+- debug mode information,
+- paths to other resources.
+
+An example of a file that is often interesting in web applications is:
+
+```text
+.env
+```
+
+If the application allows this file to be read, the vulnerability may lead to further application compromise or access to other services.
+
+### 3. Disclosure of the application structure
+
+Even if secrets cannot be read, Path Traversal may reveal the structure of directories and files.
+
+This knowledge helps understand:
+
+- where the application is located,
+- what framework it uses,
+- where logs are stored,
+- where backups are stored,
+- what the deployment structure looks like,
+- whether other applications exist on the same server.
+
+This increases the surface for further attacks.
+
+### 4. Possible escalation to code execution
+
+Path Traversal is not always limited to reading files.
+
+If the vulnerability exists in an upload feature and the user can influence where a file is saved, the issue becomes much more serious.
+
+In such a scenario, an attacker may try to save a file outside the allowed upload directory, for example in a location accessible through the web server.
+
+If the server also executes that file as code, the vulnerability may lead to remote code execution.
+
+This is not the default outcome of every Path Traversal vulnerability, but it is one possible scenario when the application and server are misconfigured.
+
+---
+
+## Path Traversal vs LFI
+
+Path Traversal often appears next to the term LFI, which means Local File Inclusion.
+
+It is worth separating these two concepts.
+
+Path Traversal means manipulating a path to escape an allowed directory.
+
+LFI means that the application includes a local file as part of its execution logic.
+
+Example of file reading:
+
+```php
+readfile($_GET["file"]);
+```
+
+This is more closely associated with Path Traversal and unauthorized file reading.
+
+Example of file inclusion:
+
+```php
+include($_GET["page"]);
+```
+
+This may lead to LFI, because the application is not only reading the file, but also trying to load it as part of the code or view layer.
+
+In practice, these vulnerabilities can overlap. Path Traversal can be the technique that allows the attacker to reach a file that is later used in Local File Inclusion.
+
+---
+
+## A simple attack example
+
+Assume the application has this endpoint:
+
+```http
+GET /download?file=invoice.pdf
+```
+
+The application assumes that the file is located inside:
+
+```text
+documents/
+```
+
+So under normal conditions, it reads:
+
+```text
+documents/invoice.pdf
+```
+
+The attacker may try:
+
+```http
+GET /download?file=../../../../etc/passwd
+```
+
+If the application does not verify the final path, it may try to read:
+
+```text
+documents/../../../../etc/passwd
+```
+
+After path normalization, this may point to:
+
+```text
+/etc/passwd
+```
+
+If the response contains fragments of this file, the vulnerability is confirmed.
+
+Example signal:
+
+```text
+root:x:0:0:
+daemon:x:
+www-data:x:
+```
+
+---
+
+## Why is blocking `../` not enough?
+
+A common mistake is trying to protect the application by removing suspicious text fragments.
+
+For example, the application may remove every occurrence of:
+
+```text
+../
+```
+
+The problem is that this type of filtering is fragile.
+
+An attacker may try to use another representation of the same character sequence or the same path logic.
+
+Example variants:
+
+```text
+%2e%2e%2f
+..%2f
+..%5c
+```
+
+Depending on decoding behavior and the operating system, these can all represent an attempt to move one directory up.
+
+Another issue appears when the application removes `../` only once. In that case, a specially crafted string may still create a dangerous path after the filtering step.
+
+That is why blacklist-based protection is weak. The goal is not to block a few known payloads. The goal is to prevent the user from deciding the final file path in the first place.
+
+---
+
+## How should an application be protected?
+
+The safest approach is to avoid accepting file paths from the user.
+
+Instead, the user should provide an identifier.
+
+Instead of:
+
+```http
+GET /download?file=invoice.pdf
+```
+
+use:
+
+```http
+GET /download?id=123
+```
+
+The server-side application maps the identifier to a specific file:
+
+```text
+123 -> /safe/storage/invoice-123.pdf
+```
+
+The user does not know where the file is physically stored and cannot manipulate the path.
+
+Good practices:
+
+- do not accept full paths from the user,
+- use identifiers instead of filenames,
+- use allowlists for accepted values,
+- normalize the path before using it,
+- verify that the final path is still inside the allowed directory,
+- restrict the permissions of the application process,
+- store uploaded files outside the web server’s executable directory,
+- ignore the filename provided by the user during upload,
+- generate server-side filenames.
+
+---
+
+## How to think about this vulnerability as a pentester?
+
+When testing, do not start with the question:
+
+> “Which payload should I paste?”
+
+Start with:
+
+> “Can the user influence something that the application treats as a path?”
+
+That is the key point.
+
+If you see a parameter such as:
+
+```text
+file=...
+template=...
+lang=...
+path=...
+download=...
+```
+
+it does not mean the application is vulnerable yet, but it marks a place worth checking.
+
+Then ask:
+
+1. Does this value look like a filename?
+2. Does the application return file content?
+3. Does an error reveal a local path?
+4. Can the base directory be escaped?
+5. Does the application use a blacklist instead of an allowlist?
+6. Does the application append a file extension?
+7. Is the feature reading, writing, or including a file?
+
+These questions are more important than memorizing dozens of payloads.
+
+---
+
+## Minimal test examples for understanding
+
+At the basic level, a few examples are enough.
+
+Linux:
+
+```text
+../../../../etc/passwd
+```
+
+Windows:
+
+```text
+..\..\..\Windows\win.ini
+```
+
+URL encoded:
+
+```text
+%2e%2e%2f%2e%2e%2fetc%2fpasswd
+```
+
+Application configuration file:
+
+```text
+../../../../.env
+```
+
+This is not a complete testing list. These are only examples that help explain the mechanism.
+
+In a real test, the payload depends on the application, operating system, framework, routing behavior, filters, and how the application builds the path.
+
+---
+
+## What counts as evidence of the vulnerability?
+
+The best evidence is an application response containing the content of a file the user should not be able to read.
+
+Example for Linux:
+
+```text
+root:x:0:0:
+daemon:x:
+www-data:x:
+```
+
+Example for Windows:
+
+```text
+[fonts]
+[extensions]
+```
+
+A weaker but still important signal can be an error containing a local path:
+
+```text
+failed to open stream: No such file or directory in /var/www/app/download.php
+```
+
+Such an error does not always confirm the full vulnerability, but it shows that the application probably uses user input in a file operation.
+
+---
+
+## Key takeaways
+
+Path Traversal is not “an attack on `/etc/passwd`”.
+
+It is a vulnerability caused by misplaced trust in a user-controlled path.
+
+If the application concatenates a base directory with a user-provided value and does not verify the final path, the user may try to escape the allowed directory.
+
+The impact may include:
+
+- reading system files,
+- reading application configuration,
+- disclosing secrets,
+- learning the system structure,
+- expanding the attack surface,
+- in specific cases, writing a file outside the allowed directory and achieving code execution.
+
+The best protection is not blocking individual payloads, but changing the model:
+
+> the user does not provide a path; the user provides a resource identifier, and the application decides which file is accessible.
+
+---
+
+## Essence
+
+The developer thinks:
+
+```text
+The user will provide a filename.
+```
+
+The pentester asks:
+
+```text
+Can I make that filename become a path?
+```
+
+And that difference is where the entire Path Traversal vulnerability lives.

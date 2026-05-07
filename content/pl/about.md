@@ -2,63 +2,146 @@
 id: about
 title: "O mnie"
 team: neutral
-category: General
+domain: meta
+section: about
+topic: bonus1337
+type: about
+angle: learning-in-public-and-cybersecurity-growth
+sourceTrack: field-manual
 tags: ["about", "meta"]
 difficulty: easy
-updatedAt: "2026-03-10"
+updatedAt: "2026-05-07"
 ---
 
 # Bonus1337
 
-Mam na imię Maciej. Uczę się bezpieczeństwa ofensywnego - i zamiast trzymać notatki w zakładkach, starych plikach i chaosie na Discordzie, zrobiłem z nich coś co możesz też ty używać.
+Mam na imię Maciej. W cyberbezpieczeństwie działam pod pseudonimem **Bonus1337**.
 
-To nie jest kurs. Nie ma tu nic do kupienia. Jest za to sposób myślenia, który próbuję tu zapisać - żeby samemu nie szukać tego samego dwa razy i żeby inni mogli się na tym oprzeć.
+Ten Field Manual powstał z bardzo prostego problemu: uczyłem się z labów, kursów, książek, CTF-ów, notatek z Discorda, własnych błędów i dziesiątek rozrzuconych źródeł. W pewnym momencie zrozumiałem, że jeśli nie zacznę tego porządkować, to będę ciągle wracał do tych samych pytań od zera.
+
+Więc zrobiłem z tego miejsce, do którego sam chciałbym trafić na początku.
+
+To nie jest kurs.  
+To nie jest „ostateczna prawda”.  
+To nie jest kolekcja magicznych komend.
+
+To jest mój praktyczny manual do nauki bezpieczeństwa - pisany tak, żeby rozumieć proces, a nie tylko kopiować payloady.
 
 ---
 
 ## Kim jestem
 
-Cybersecurity student z obsesją na punkcie tego, **dlaczego** rzeczy działają - nie tylko jak je odpalić.
+Jestem osobą, która uczy się cyberbezpieczeństwa przez praktykę, analizę błędów i budowanie własnego systemu notatek.
 
-Przygotowuję się do **eJPT** i stażu pentesterskiego w orbicie Sekuraka. Działam głównie w obszarze web exploitation, recon i network pentesting. Buduję rzeczy, piszę o tym co się uczę, i staram się żeby ta wiedza była dostępna - nie tylko dla tych, których stać na drogie bootcampy.
+Zdałem **eJPT** oraz **ICCA** od INE, a wcześniej przeszedłem przez intensywną ścieżkę nauki w okolicach Sekurak Academy Hacker. Najmocniej ciągnie mnie w stronę ofensywnego bezpieczeństwa: web exploitation, recon, podstawy sieci, Linux, logika aplikacji i realne myślenie pentesterskie.
 
-Piszę i działam pod pseudonimem **Bonus1337** - bo tak mnie zna internet i tak zostanie.
+Ale im dłużej siedzę w tym świecie, tym bardziej widzę jedną rzecz:
+
+dobry pentester nie jest osobą, która zna najwięcej payloadów.
+
+Dobry pentester rozumie aplikację, dane, uprawnienia, sieć, ograniczenia, wpływ biznesowy i potrafi pokazać problem tak, żeby ktoś po drugiej stronie naprawdę wiedział, co ma naprawić.
+
+Dlatego ten manual nie jest tylko o atakowaniu. Jest też o raportowaniu, procesie, blue teamie, cloudzie, prawie, certyfikacjach, narzędziach i wszystkim tym, co buduje techniczny kręgosłup w cyberbezpieczeństwie.
 
 ---
 
 ## Jak myślę o bezpieczeństwie
 
 **Proces ponad payloady.**
-Recon → enumeration → exploit → post-exploit → raport. Można mieć tysiąc narzędzi i nic nimi nie zrobić bez metody. Narzędzia się zmieniają. Myślenie zostaje.
 
-**Blue Team daje fundamenty Red Teamowi.**
-Zanim zaczniesz atakować - musisz wiedzieć co i dlaczego chronisz. Obrona tłumaczy atak szybciej niż jakikolwiek kurs "ethical hacking od zera".
+Recon, enumeration, exploitation, post-exploitation, raport. Bez procesu nawet najlepsze narzędzie staje się losowym klikaniem. Z procesem nawet prosty request w Burpie potrafi pokazać realną podatność.
 
-**Mniej magii, więcej zrozumienia.**
-Kopiowanie komend bez wiedzy dlaczego działają to droga donikąd. Tu każde polecenie ma kontekst - co robi, jak działa mechanizm za nim, gdzie to się może wyłożyć.
+**Zrozumienie ponad zapamiętywanie.**
+
+Nie chcę tylko wiedzieć, że dana komenda działa. Chcę wiedzieć, co ona wysyła, co serwer odpowiada, co z tego wynika i gdzie może pojawić się następna hipoteza.
+
+**Raport jest częścią ataku.**
+
+Podatność bez kontekstu jest tylko ciekawostką. Dopiero dobry opis, wpływ, PoC, zakres, warunki odtworzenia i rekomendacja sprawiają, że finding ma wartość.
+
+**Blue Team wzmacnia Red Team.**
+
+Żeby dobrze atakować, trzeba rozumieć co jest chronione, jak wygląda detekcja, gdzie powstają logi, co widzi SOC i dlaczego pewne błędy kończą się incydentem.
+
+**Nie chodzi o bycie „hackerem”. Chodzi o myślenie jak operator.**
+
+Planować. Testować hipotezy. Weryfikować. Dokumentować. Nie zgadywać.
 
 ---
 
-## Dla kogo jest ten manual
+## Po co istnieje ten Field Manual
 
-Dla ludzi którzy:
+Ten manual jest moją próbą zamiany chaosu nauki w coś użytecznego.
 
-- uczą się ofensywy lub defensywy i chcą mieć **jedno porządne miejsce** z notatkami zamiast 40 zakładek
-- robią CTF-y, laby, TryHackMe i wolą **field notes** od podręcznika pisanego przez komitet
-- chcą rozumieć narzędzia - nie tylko je uruchamiać
-- zaczynają i szukają kogoś kto tłumaczy jak kolega, nie jak wykładowca
+Znajdziesz tu między innymi:
 
-Notatki możesz też **pobrać offline** - każdą jako PDF lub raw Markdown. Przycisk Export jest w prawym górnym rogu. Działaj bez internetu jeśli potrzebujesz.
+- notatki z web security i podatności aplikacyjnych,
+- write-upy z labów i CTF-ów,
+- materiały pod eJPT, ICCA i inne ścieżki certyfikacyjne,
+- praktyczne checklisty do narzędzi takich jak Burp Suite, Nmap czy Wazuh,
+- przemyślenia o raportowaniu, karierze, prawie i sposobie nauki,
+- techniczne materiały pisane tak, żeby dało się z nich realnie korzystać.
+
+Piszę to głównie dla siebie z przeszłości - osoby, która bardzo chciała wejść w cyber, ale często gubiła się w ilości skrótów, narzędzi i porad bez kontekstu.
+
+Jeśli jesteś na podobnym etapie, ten manual może oszczędzić Ci trochę chaosu.
+
+---
+
+## Dla kogo to jest
+
+Dla osób, które:
+
+- uczą się cyberbezpieczeństwa i chcą rozumieć proces, nie tylko komendy,
+- robią CTF-y, TryHackMe, PortSwigger Academy albo własne laby,
+- przygotowują się do pierwszych certyfikacji,
+- chcą wejść w web security, recon, pentesting albo SOC,
+- wolą praktyczne field notes od suchej teorii,
+- szukają materiałów pisanych ludzkim językiem, bez udawania nieomylnego eksperta.
+
+Nie obiecuję, że wszystko tutaj będzie idealne.
+
+Obiecuję za to, że staram się pisać tak, jak sam chciałbym się uczyć: konkretnie, technicznie, z kontekstem i bez robienia magii tam, gdzie wystarczy dobre zrozumienie mechanizmu.
+
+---
+
+## Co już za mną
+
+Na ten moment najważniejsze kamienie milowe to:
+
+- zdany **eJPT**,
+- zdany **ICCA**,
+- intensywna nauka w środowisku Sekurak Academy Hacker,
+- praktyka na labach, CTF-ach i platformach takich jak TryHackMe oraz PortSwigger Academy,
+- budowanie własnego Field Manuala jako publicznego portfolio wiedzy,
+- regularne pisanie o cyberbezpieczeństwie, nauce i procesie rozwoju.
+
+Nie traktuję certyfikatów jako mety.
+
+Traktuję je jako dowód, że przeszedłem pewien etap i mogę iść dalej z trochę lepiej poukładanym fundamentem.
 
 ---
 
 ## Gdzie mnie znajdziesz
 
-Jeśli chcesz śledzić jak się uczę, co buduję i co mi nie wychodzi za pierwszym razem:
+Jeśli chcesz śledzić jak się uczę, co buduję i co po drodze rozbijam na czynniki pierwsze:
 
-- **LinkedIn** → [Maciej Szymański](https://www.linkedin.com/in/szymanski-maciej1337/) - piszę tam o tym co robię, czego się uczę i jak to wygląda od środka
-- **TryHackMe** → [Bonus1337](https://tryhackme.com/p/Bonus1337) - tu znajdziesz mój progress, pokoje które robiłem i writeup'y które trafiają też tutaj
+- **LinkedIn** → [Maciej Szymański](https://www.linkedin.com/in/szymanski-maciej1337/)  
+  Piszę tam o cyberbezpieczeństwie, nauce, certyfikacjach, Sekuraku, labach i wnioskach z praktyki.
+
+- **TryHackMe** → [Bonus1337](https://tryhackme.com/p/Bonus1337)  
+  Tu znajdziesz mój progress, pokoje, które robiłem i część ścieżki praktycznej, z której później powstają notatki.
 
 ---
 
-> Jeśli widzisz błąd, masz lepszy wariant komendy albo chcesz dopisać sekcję - PR mile widziany na GitHubie. To jest żywy dokument, nie wykuta w kamieniu prawda.
+## Jedna myśl na koniec
+
+Nie buduję tego manuala po to, żeby wyglądać na kogoś, kto wie wszystko.
+
+Buduję go po to, żeby lepiej rozumieć to, czego się uczę - i zostawić po sobie ślad pracy, który może pomóc komuś innemu.
+
+Bo w cyber bardzo łatwo zbierać zakładki, certyfikaty, narzędzia i buzzwordy.
+
+Dużo trudniej zbudować własny sposób myślenia.
+
+I właśnie o to tutaj chodzi.

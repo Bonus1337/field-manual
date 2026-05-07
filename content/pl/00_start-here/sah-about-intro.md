@@ -1,0 +1,235 @@
+---
+id: sah-about-interpretation
+title: "co naprawdę wynika z materiałów startowych (wnioski i mindset)"
+team: red
+domain: start-here
+section: learning-paths
+type: knowledge
+angle: pentest-mindset
+sourceTrack: sah-0-to-1
+tags: ["sah", "web-pentest", "about", "mindset", "recruitment", "reporting", "http"]
+difficulty: easy
+shortDescription: "Interpretacja materiałów startowych SAH pokazująca, że web pentesting nie opiera się na samym szukaniu payloadów, ale na rozumieniu systemu, budowaniu właściwego modelu myślenia, świadomej pracy z HTTP oraz dowożeniu wyniku w formie raportu, który ma realną wartość dla technicznych i biznesowych odbiorców."
+updatedAt: "2026-02-26"
+---
+
+# SAH / Od 0 do Web Pentestera - co naprawdę wynika z materiałów startowych
+
+Te materiały przygotowawcze robią jedną rzecz bardzo dobrze: **ustawiają oczekiwania**.
+
+Jeśli ktoś wchodzi w pentest z nastawieniem “będę szukał podatności i strzelał payloadami”, to one wprost pokazują, że:
+
+- sama znajomość klas błędów to za mało,
+- samo “znalezienie podatności” to nie koniec pracy,
+- a o wartości pentestera decyduje to, czy umie dowieźć wynik **w formie zrozumiałej i użytecznej**.
+
+To jest w praktyce kurs o trzech rzeczach: **fundamenty techniczne**, **sposób myślenia**, **raport jako produkt**.
+
+---
+
+## 1) Co te materiały mówią o zawodzie pentestera
+
+### Pentester nie wygrywa “narzędziami”, tylko rozumieniem
+
+One podkreślają “wchodzenie głęboko w zagadnienie” nie dlatego, że to brzmi mądrze, tylko dlatego że:
+
+- większość realnych bugów nie wygląda jak z tutoriala,
+- a przeszkody są normą: filtry, walidacje, brak komunikatów błędów, mechanizmy przeglądarki, cache, role, tokeny.
+
+W praktyce to oznacza: **nie polujesz na podatność, tylko na warunek, który łamie założenie systemu**.
+
+### “Hacker” w tym ujęciu = kompetencja, nie etykieta
+
+Ten fragment o pierwotnym znaczeniu słowa “hacker” jest po coś:
+
+- masz być osobą, która **sprytnie rozwiązuje problemy techniczne**,
+- i potrafi złożyć fakty w całość, nawet jeśli nie ma gotowej ścieżki “kliknij tu”.
+
+To jest mocny sygnał: w SAH liczy się **logika i inżynierskie myślenie**, nie teatralne “exploity”.
+
+### Komunikacja i notatki są skillami core
+
+To nie jest “miły dodatek”.
+Materiały mówią wprost, że pentester musi umieć wytłumaczyć rzeczy trudne osobom nietechnicznym - bo inaczej:
+
+- ryzyko nie zostanie zrozumiane,
+- budżet nie zostanie uzasadniony,
+- poprawki nie będą priorytetem.
+
+I co ważne: to jest też hint do rekrutacji - często sprawdzają, czy potrafisz mówić jasno, a nie czy znasz definicje.
+
+---
+
+## 2) Jak patrzeć na listę podatności z materiałów
+
+Lista typu SQL Injection / XSS / CSRF / SSRF / XXE / deserializacja / CSP / CORS wygląda jak “tematy do przerobienia”, ale sens materiałów jest głębszy.
+
+**Wspólny mianownik tych tematów:**  
+to są błędy na styku **zaufania, parserów i kontekstu wykonania**.
+
+- SQL Injection → aplikacja ufa, że input zostanie zinterpretowany jako dane, a nie jako składnia.
+- XXE → parser XML robi “coś extra” (encje zewnętrzne), a aplikacja nie kontroluje tego zachowania.
+- Deserializacja → aplikacja bierze obiekt “z zewnątrz” i traktuje jak bezpieczny/oczekiwany.
+- SSRF → serwer wykonuje requesty “w imieniu atakującego” i nagle granice sieci/zasobów się rozmywają.
+- XSS → przeglądarka wykonuje kod, który miał być tylko treścią.
+- CSRF → przeglądarka wykonuje akcję, bo “sesja się zgadza”, nawet jeśli intencja użytkownika jest fałszywa.
+
+**Czyli:**
+nie uczysz się “payloadów”, tylko uczysz się rozpoznawać, gdzie system:
+
+- myli dane z poleceniami,
+- ufa kontekstowi (przeglądarka/serwer),
+- pozwala przejść przez granicę (role, sieć, origin).
+
+To jest kluczowy mindset: **szukasz miejsc, gdzie założenia projektowe są kruche.**
+
+---
+
+## 3) Burp Suite w materiałach: dlaczego Proxy jest najważniejsze
+
+To, że “zacznij od Proxy” jest celowe.
+
+Proxy robi dwie rzeczy:
+
+1. uczy Cię patrzeć na aplikację przez pryzmat **HTTP**, a nie UI,
+2. wymusza precyzję: request/response, parametry, nagłówki, cookies.
+
+Czyli proxy to nie “narzędzie”.
+To jest **przełączenie trybu myślenia**:
+
+- z “klikam i patrzę co się stanie”
+- na “kontroluję wejście, obserwuję wyjście, robię hipotezę, weryfikuję”.
+
+To jest fundament pod wszystko później: blind SQLi, tokeny, cache, CORS, CSRF… bez Proxy jesteś ślepy.
+
+---
+
+## 4) Co naprawdę sprawdzają pytania rekrutacyjne
+
+Te 10 pytań z materiałów jest dobrane sprytnie.
+One nie są testem pamięci - one są testem **modelu mentalnego**, który masz w głowie.
+
+### otwieranie https, TLS, wymuszanie https
+
+To jest test, czy rozumiesz:
+
+- jak działa internet “po warstwach” (DNS → TCP → TLS → HTTP),
+- i czy ogarniasz zachowania przeglądarki/protokółów, które zmieniają bezpieczeństwo (np. wymuszanie HTTPS).
+
+Nie chodzi o nazwy mechanizmów.
+Chodzi o to, czy potrafisz w głowie rozłożyć proces na kroki i znaleźć miejsca, gdzie mogą być błędy.
+
+### DOM XSS, eskalacje, “JS się nie renderuje”
+
+To są pytania o:
+
+- klasyfikacje i konsekwencje (czy rozumiesz różnice),
+- mechanizmy przeglądarki, które potrafią zabić exploit mimo że “payload wygląda dobrze”.
+
+To jest ważne, bo w realu często:
+
+- “teoretycznie mam XSS”
+- ale CSP, kontekst DOM albo sanitization sprawiają, że nie masz wpływu.
+
+### Blind SQLi
+
+To jest test dojrzałości:
+czy umiesz potwierdzać rzeczy **bez bezpośredniego feedbacku**.
+W prawdziwych aplikacjach bardzo często nie dostaniesz błędu SQL w odpowiedzi. Musisz umieć szukać sygnałów pośrednich.
+
+### DNS rebinding
+
+To jest test, czy rozumiesz granice zaufania między:
+
+- przeglądarką,
+- DNS,
+- “lokalnością” zasobów.
+
+To jest też sygnał: pentester webowy ma rozumieć rzeczy na pograniczu web + sieci.
+
+### cache
+
+To pytanie jest genialne, bo cache jest “feature”, a nie “bug”.
+Sprawdzają, czy rozumiesz, że bezpieczeństwo często psuje się optymalizacją:
+
+- pomieszanie użytkowników,
+- cachowanie danych wrażliwych,
+- trucie cache.
+
+W realu to się zdarza często, bo to są błędy architektoniczne, nie tylko “brak escape’a”.
+
+### JWT jako sesja
+
+To jest test, czy potrafisz myśleć jak audytor:
+JWT to nie magia. To format + walidacja.
+Szukasz błędów w:
+
+- weryfikacji,
+- konfiguracji,
+- atrybutach tokena,
+- sposób użycia w aplikacji (czy token naprawdę jest traktowany jak sesja, czy jako “źródło prawdy o roli”).
+
+### self-stored XSS + chaining
+
+To jest test najważniejszego skillu ofensywnego:
+**łączenie podatności.**
+Bo self-stored XSS samo w sobie często jest “tylko dla mnie”.
+Wartość rośnie, gdy umiesz zrobić z tego scenariusz wpływający na innych użytkowników przez funkcje aplikacji.
+
+**Meta-wniosek z tych pytań:**  
+chcą zobaczyć, czy umiesz myśleć “systemowo”, a nie “podatnościowo”.
+
+---
+
+## 5) Raportowanie: materiał mówi wprost, co zabija raport i co go ratuje
+
+W tych materiałach raport jest traktowany jak produkt końcowy.
+I pada tam kilka rzeczy, które warto potraktować jak twarde zasady:
+
+### Raport ma dwóch odbiorców i musisz zagrać na dwa poziomy
+
+- dev potrzebuje **konkretu** (PoC, lokalizacja, fix),
+- management potrzebuje **obrazu** (zakres, metoda, ryzyko, priorytety, statystyka).
+
+Jeśli raport jest tylko techniczny → management go nie użyje.  
+Jeśli raport jest tylko ogólny → dev nie naprawi.
+
+### PoC to serce wiarygodności
+
+Materiały mówią to praktycznie:
+mętny PoC = nie da się odtworzyć = można podważyć, czy błąd w ogóle istnieje.
+
+Dobry PoC to nie “opis w stylu: wstrzyknąłem payload”.
+Dobry PoC to:
+
+- konkretne kroki,
+- konkretne requesty,
+- konkretne warunki,
+- i konkretny rezultat.
+
+### Rekomendacja jest prawie tak ważna jak PoC
+
+Nietrafna rekomendacja potrafi:
+
+- nie zamknąć problemu,
+- albo nawet zaszkodzić (bo zmienia zachowanie systemu bez zrozumienia kontekstu).
+
+Wniosek: pentester musi rozumieć fix na poziomie “co programista ma zrobić”, a nie “niech doda walidację”.
+
+### “Lokalizacja” to nie formalność
+
+Jeśli błąd występuje tylko w specyficznym warunku - musisz wskazać precyzyjnie gdzie.
+To jest praktyka, która oszczędza godziny po stronie zespołu naprawiającego.
+
+---
+
+## 6) Z czym trzeba wyjść po przemyśleniu tych materiałów (mój destylat)
+
+Jeśli miałbym streścić “co mam mieć w głowie po tym pakiecie startowym”, to wygląda to tak:
+
+1. **Pentest = rozumienie systemu + dowód + komunikacja.**
+2. **Podatności to efekt pęknięcia założeń (zaufanie/kontekst/parser).**
+3. **Burp Proxy to sposób myślenia, nie narzędzie.**
+4. **Rekrutacja sprawdza model mentalny, nie definicje.**
+5. **Raport to produkt: PoC + rekomendacja decydują o wartości pracy.**
+6. **Najlepsi łączą fakty i łączą podatności - nie “klepią checklisty”.**

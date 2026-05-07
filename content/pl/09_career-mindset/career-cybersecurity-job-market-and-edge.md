@@ -1,0 +1,499 @@
+---
+id: career-cybersecurity-job-market-and-edge
+title: "Cybersecurity nie umarło - skończył się czas chaotycznych profili"
+team: neutral
+domain: career-mindset
+section: cybersecurity-career
+topic: job-market-and-career-edge
+type: opinion
+angle: career-positioning-and-specialization
+sourceTrack: sah-0-to-1
+tags: ["cybersecurity", "career", "portfolio", "certifications", "specialization"]
+difficulty: medium
+shortDescription: "Przemyślana notatka o rynku pracy w cybersecurity, pokazująca dlaczego sama zajawka, chaos kompetencyjny i zbieranie buzzwordów przestają wystarczać, a realną przewagę zaczynają dawać specjalizacja, widoczny ślad pracy, portfolio, komunikacja i zdolność uniesienia konkretnego problemu."
+updatedAt: "2026-03-19"
+---
+
+# Cybersecurity nie umarło. Skończył się tylko czas na chaotyczne profile.
+
+## Dlaczego w ogóle to sobie zapisuję
+
+Bo mam wrażenie, że dziś bardzo łatwo sobie rozwalić głowę skrajnymi narracjami.
+
+Z jednej strony wszędzie leci przekaz, że cybersecurity to przyszłość, że brakuje ludzi, że rynek rośnie, że warto wejść teraz.
+Z drugiej strony równie często widać ludzi, którzy mówią, że wszystko zdechło, juniorów nikt nie chce, wymagania są chore, a bez doświadczenia najlepiej nawet nie podchodzić.
+
+I prawda jest taka, że obie strony dotykają kawałka prawdy, ale żadna nie mówi wszystkiego.
+
+Cybersecurity nie umarło.
+Nie zrobiło się też nagle łatwe.
+Po prostu skończył się czas, w którym wystarczało brzmieć jak ktoś z branży.
+
+Dzisiaj dużo bardziej liczy się to, czy jesteś czytelny.
+Czy wiadomo, od czego jesteś.
+Czy potrafisz pokazać coś więcej niż zajawkę.
+Czy umiesz unieść kawałek realnego problemu.
+Bo firma nie zatrudnia mnie po to, żebym „interesował się bezpieczeństwem”.
+Firma zatrudnia mnie po to, żebym był mniej kosztowny niż ryzyko, które pomagam ograniczyć.
+
+I to jest chyba najtrzeźwiejszy punkt wyjścia.
+
+---
+
+## Rynek nie jest martwy. Rynek jest po prostu bezlitosny dla nijakości.
+
+To jest chyba najlepsze zdanie, jakie można sobie dziś wbić do głowy.
+
+Bo pracy w security dalej jest dużo.
+Incydentów nie ubywa.
+Chaos nie maleje.
+Regulacji przybywa.
+AI nie uspokoiło rynku, tylko w wielu miejscach dolało benzyny do ognia.
+Firmy dalej mają bałagan w procesach, systemach, uprawnieniach, konfiguracjach i odpowiedzialnościach.
+
+Więc nie - problem nie polega na tym, że bezpieczeństwo przestało być potrzebne.
+
+Problem polega na tym, że firmy dużo mniej chętnie biorą ludzi, którzy są ogólni, rozmyci i trudni do zrozumienia.
+
+To nie jest chłodny rynek.
+To jest gorący rynek, ale z dużo ostrzejszym filtrem.
+
+Czyli dokładnie tak:
+miejsca są, ale nie dla każdego.
+Popyt jest, ale nie na kogokolwiek.
+Brakuje ludzi, ale nie byle jakich.
+
+I to jest paradoks, który na pierwszy rzut oka wygląda dziwnie, a tak naprawdę jest całkiem logiczny.
+Bo jeśli firma ma problem, który kosztuje ją czas, pieniądze, audyt, reputację albo spokojny sen zarządu, to nie chce zatrudnić kolejnego człowieka do nauki „od zera”.
+Chce kogoś, kto będzie wsparciem, a nie kolejnym ryzykiem.
+
+---
+
+## Największy błąd to myśleć, że sama zajawka coś załatwia
+
+Zajawka jest super.
+Bez niej w ogóle ciężko długo uciągnąć ten temat.
+Tylko że zajawka jest paliwem.
+Nie produktem.
+
+To, że siedzę po nocach nad labami, robię write-upy, grzebię w webie, analizuję błędy, czytam o podatnościach i jaram się exploitacją - to jest dobry start.
+Ale z perspektywy rynku to jeszcze nie jest wartość sama w sobie.
+
+Wartością staje się dopiero to, że:
+
+- rozumiem system, a nie tylko narzędzie,
+- potrafię domknąć temat,
+- umiem coś pokazać,
+- umiem coś opisać,
+- umiem przełożyć techniczny chaos na realny problem,
+- umiem być użyteczny.
+
+To jest różnica między kimś, kto „lubi cyber”, a kimś, komu można coś oddać.
+
+I im szybciej człowiek przestaje budować swoją tożsamość wokół samego „jara mnie bezpieczeństwo”, tym lepiej.
+Bo w którymś momencie trzeba przestać brzmieć jak fan branży i zacząć wyglądać jak ktoś, kto może w niej dowozić.
+
+---
+
+## Coraz mocniej widzę, że cybersecurity jest częściej kolejnym krokiem niż pierwszym
+
+To jest coś, co bardzo porządkuje myślenie.
+
+Security samo w sobie rzadko jest dobrym pierwszym fundamentem.
+Dużo częściej jest nadbudową na czymś, co już wcześniej rozumiałeś.
+
+Admin, sieci, helpdesk, systemy, development, cloud, operacje, proces, zgodność, ryzyko - to wszystko może być bardzo sensownym wejściem do bezpieczeństwa.
+
+I to ma sens.
+Bo dużo łatwiej zabezpieczać coś, co już wcześniej miało się w rękach.
+Dużo łatwiej testować aplikację, kiedy rozumiesz, jak ona powstaje.
+Dużo łatwiej wejść w cloud security, kiedy wcześniej nie patrzyłeś na chmurę jak na magiczne pudełko.
+Dużo łatwiej wejść w GRC, kiedy rozumiesz proces, dokumentację, wymagania i organizacyjny chaos.
+
+Im dłużej na to patrzę, tym mniej wierzę w romantyczną wizję wejścia do cybersecurity wyłącznie z samego konsumowania materiałów o cybersecurity.
+
+Da się wejść.
+Ale dużo rzadziej da się wskoczyć.
+Najczęściej trzeba zbudować most.
+
+I to jest dla mnie dziś ważniejsze pytanie niż samo „jak wejść do cyber?”:
+
+**jaki fundament buduję, żeby wejście do cyber było dla rynku wiarygodne?**
+
+---
+
+## Sam certyfikat nie robi z nikogo specjalisty. Ale brak sygnału też nie pomaga.
+
+Tutaj łatwo popaść w skrajność.
+
+Jedni mówią, że certy to papierki i nic nie znaczą.
+Drudzy traktują je jak magiczne przepustki.
+
+A prawda jest dużo prostsza:
+certyfikat pomaga, ale nie niesie człowieka sam.
+
+Pomaga przejść pierwszy filtr.
+Pomaga uporządkować naukę.
+Pomaga wysłać rynkowi sygnał, w jakim kierunku idziesz.
+Pomaga pokazać, że nie kręcisz się bez ładu.
+
+Ale jeżeli za tym nie stoi nic więcej, to zaczyna wyglądać źle.
+
+Bo jeśli ktoś ma obwieszony profil certami, a nie ma żadnego repo, żadnego write-upu, żadnego projektu, żadnej sensownej analizy, żadnego widocznego śladu pracy, to zamiast wyglądać mocno, często zaczyna wyglądać podejrzanie.
+
+Jak ktoś ma wszystko, a nie pokazuje nic, to pojawia się pytanie:
+okej, ale gdzie tu jest praktyka?
+
+Dlatego dużo bardziej trzyma mi się w głowie takie podejście:
+
+**certyfikat ma wzmacniać sensowną ścieżkę, a nie przykrywać brak doświadczenia.**
+
+Najpierw kierunek.
+Potem dowody pracy.
+Potem papier jako wsparcie.
+Nie odwrotnie.
+
+---
+
+## Profil „trochę wszystkiego” brzmi ambitnie, ale na końcu często przegrywa
+
+To jest chyba jedna z najczęstszych pułapek ludzi, którzy serio chcą wejść mocno.
+
+Bo cybersecurity jest szerokie.
+Za szerokie.
+I wszystko wydaje się ciekawe.
+
+Trochę pentestów.
+Trochę chmury.
+Trochę SOC-a.
+Trochę OSINT-u.
+Trochę AppSec.
+Trochę DevSecOps.
+Trochę AI.
+Trochę sieci.
+Trochę Linuxa.
+Trochę automatyzacji.
+
+Brzmi dobrze.
+Tylko że po czasie z tego bardzo często wychodzi profil, którego nikt nie umie szybko zrozumieć.
+
+A rynek nie lubi zgadywać.
+Rekruter nie będzie się zastanawiał, co z tego jest Twoim rdzeniem.
+Menadżer nie będzie sobie sam składał Twojej tożsamości z puzzle.
+On chce wiedzieć, czy pasujesz do problemu, który ma na stole.
+
+I właśnie dlatego specjalizacja daje przewagę.
+Nie dlatego, że wszystko inne przestaje istnieć.
+Tylko dlatego, że ktoś musi być w stanie powiedzieć o Tobie jedno konkretne zdanie.
+
+Nie:
+„zna trochę tego, trochę tamtego”.
+Tylko:
+„to jest ten gość od tego kawałka”.
+
+To nie znaczy, że masz się zamknąć w jednej szufladzie na całe życie.
+Ale na pewnym etapie trzeba przestać wyglądać jak lista buzzwordów.
+
+Bo prawda jest brutalna:
+**jak umiesz wszystko, to w oczach rynku bardzo często nie umiesz nic wystarczająco dobrze.**
+
+---
+
+## Dziś bardziej niż kiedyś liczy się to, co widać
+
+To jest coś, co mnie osobiście bardzo mocno trzyma.
+
+Bo można siedzieć samemu miesiącami.
+Robić laby.
+Uczyć się.
+Popełniać błędy.
+Naprawiać rzeczy.
+Pisać notatki.
+Mieć foldery pełne materiałów.
+I nikt poza Tobą o tym nie wie.
+
+Rynek nie widzi tego, czego nie pokazujesz.
+
+Nie widzi Twoich zakładek.
+Nie widzi prywatnych notatek.
+Nie widzi godzin.
+Nie widzi frustracji.
+Nie widzi prób.
+Nie widzi tego, że naprawdę siedzisz w temacie.
+
+Widoczny jest dopiero ślad.
+
+Post.
+Write-up.
+Repo.
+Mini-projekt.
+Analiza.
+Krótka notatka.
+Komentarz, który wnosi coś konkretnego.
+Opis błędu i tego, jak go rozkminiłeś.
+Regularność.
+
+I moim zdaniem właśnie tutaj można dziś zbudować ogromną przewagę.
+
+Bo jeśli nie masz jeszcze wielkiego doświadczenia komercyjnego, to nadal możesz mieć coś, co pokazuje Twój sposób myślenia.
+A to jest bardzo dużo.
+
+W pewnym sensie to nawet odwraca mechanikę rekrutacji.
+Bo kiedy regularnie pokazujesz sensowną pracę, nie jesteś już tylko kimś, kto „wysyła CV”.
+Stajesz się człowiekiem, którego ktoś może kojarzyć zanim jeszcze klikniesz apply.
+
+I to jest mocne.
+Bardzo mocne.
+
+---
+
+## LinkedIn, GitHub, write-upy i publiczne notatki to nie jest dodatek. To jest część roboty.
+
+Kiedyś można było to traktować jako coś pobocznego.
+Dziś coraz mniej.
+
+Nie dlatego, że trzeba grać pod algorytm.
+Tylko dlatego, że publiczny ślad pracy redukuje niepewność po drugiej stronie.
+
+Jeśli regularnie pokazujesz:
+
+- co zrobiłeś,
+- czego się nauczyłeś,
+- co nie wyszło,
+- jak poprawiłeś myślenie,
+- jak analizujesz problem,
+
+to ktoś widzi nie tylko fakt, że „się uczysz”.
+Widzie też **jak** się uczysz.
+
+A to robi wielką różnicę.
+
+Bo można mieć ładne CV i zero głębi.
+A można mieć prosty profil, ale za nim regularny, prawdziwy ślad roboty.
+I zgaduję, który wariant zostaje w głowie dłużej.
+
+Dla mnie to jest też ważne osobiście.
+Bo im dłużej to robię, tym mocniej widzę, że publikowanie nie musi być „marketingiem”.
+Może być bardzo praktyczną częścią budowania własnej pozycji.
+
+Nie wszystko musi być wielkie.
+Nie wszystko musi być idealne.
+Nie wszystko musi wyglądać jak profesjonalna publikacja.
+
+Ale powinno być prawdziwe.
+Powinno mieć ciężar.
+Powinno zostawiać po Tobie sygnał, że nie jesteś tylko kolejną osobą, która mówi, że „wchodzi do branży”.
+
+---
+
+## Firmy nie kupują już samej pasji. Kupują samodzielność, porządek i zdolność ogarniania chaosu.
+
+To jest jeden z najmocniejszych wniosków.
+
+Firma nie zatrudnia po to, żeby mieć sympatycznego pasjonata.
+Firma zatrudnia po to, żeby mieć mniej bałaganu, mniej ryzyka, mniej zgadywania i mniej problemów.
+
+Dlatego tak mocno liczy się:
+
+- samodzielność,
+- rozumienie systemu,
+- umiejętność priorytetyzacji,
+- porządek w pracy,
+- dokumentacja,
+- raportowanie,
+- domykanie tematów,
+- odporność na chaos,
+- komunikacja.
+
+To są rzeczy, które nie brzmią tak sexy jak exploity, red teaming czy custom tooling.
+Ale właśnie one bardzo często robią różnicę między kimś, kto dobrze wygląda na początku, a kimś, kto naprawdę dowozi.
+
+Im dłużej patrzę na ten temat, tym mocniej widzę, że „ogar” to też jest kompetencja.
+I to taka, której bardzo nie da się udawać przez dłuższy czas.
+
+---
+
+## Komunikacja nie jest miękkim dodatkiem. W security to też jest broń.
+
+To jest coś, co wielu technicznych ludzi próbuje spychać na bok.
+Jakby sama technika miała się obronić.
+
+Nie obroni się.
+
+Bo nawet jeśli dobrze rozumiesz problem, to i tak musisz umieć sprawić, żeby ktoś inny też zrozumiał:
+
+- co jest nie tak,
+- dlaczego to ważne,
+- jakie to daje ryzyko,
+- co trzeba zrobić,
+- co się stanie, jeśli nic nie zrobimy.
+
+I nie chodzi o bycie gadanym typem z sprzedaży.
+Chodzi o bycie człowiekiem, który umie czytelnie przenieść myśl z własnej głowy do cudzej.
+
+W cyber to ma ogromną wartość.
+Raport bez sensownej narracji jest słabszy.
+Dobra analiza bez czytelnego przekazu traci połowę mocy.
+Dobre CV bez spójnego komunikatu rozmywa się.
+Mocna wiedza bez umiejętności rozmowy nie pracuje na sto procent.
+
+To jest niewygodne dla ludzi, którzy lubią siedzieć w technice i nie wychodzić do ludzi.
+Sam to rozumiem.
+Ale nie zmienia to faktu, że to dalej jest prawda.
+
+---
+
+## Narzędzia będą się zmieniały szybciej niż kiedykolwiek. Zostanie sposób myślenia.
+
+To też bardzo porządkuje głowę.
+
+Dziś naprawdę łatwo przykleić się do narzędzi, vendorów, modnych stacków i nowinek.
+Tylko że to wszystko będzie się zmieniać tak szybko, że budowanie na tym całej tożsamości jest krótkowzroczne.
+
+Znacznie ważniejsze jest rozumienie:
+
+- po co istnieje dana klasa narzędzi,
+- jaki problem rozwiązuje,
+- gdzie są granice tego rozwiązania,
+- jak wygląda logika systemu,
+- co jest celem, a co tylko środkiem.
+
+To jest trochę jak w ofensywie.
+Payloady się zmieniają.
+Środowiska się zmieniają.
+Tooling się zmienia.
+Ale jeśli rozumiesz mechanikę problemu, to nie zaczynasz od zera za każdym razem.
+
+I dokładnie tak samo jest tutaj.
+Nie warto uczyć się wszystkiego na pamięć.
+Warto rozumieć, po co to w ogóle istnieje.
+
+---
+
+## AI nie zabiera sensu tej branży. AI zabiera sens przeciętności.
+
+To jest myśl, którą bardzo chcę sobie zostawić.
+
+AI przyspiesza.
+Automatyzuje.
+Porządkuje pewne fragmenty roboty.
+Pomaga tworzyć szybciej, analizować szybciej, skalować szybciej.
+I dokładnie tak samo pomaga też atakującym.
+
+Ale AI nie sprawia, że człowiek przestaje być potrzebny.
+Sprawia raczej, że mniej wartości ma bycie przeciętnym odtwórcą schematu.
+
+Coraz więcej wartości ma człowiek, który umie:
+
+- zrozumieć kontekst,
+- zweryfikować wynik,
+- połączyć fakty,
+- zauważyć błąd,
+- rozpoznać, że coś „formalnie wygląda dobrze”, ale praktycznie śmierdzi,
+- podjąć decyzję.
+
+Czyli znowu: nie samo narzędzie daje przewagę.
+Przewagę daje jakość człowieka, który z niego korzysta.
+
+---
+
+## Są kierunki, które dziś naprawdę wyglądają sensownie
+
+Nie chodzi o gonienie trendów dla samego gonienia.
+Chodzi o to, żeby widzieć, gdzie kumuluje się realny ból rynku.
+
+### Cloud Security
+
+Bo cloud rośnie od lat i nigdzie się nie wybiera.
+A tam, gdzie jest szybki wzrost, tam zwykle szybko rośnie też bałagan.
+IAM, konfiguracja, widoczność zasobów, uprawnienia, governance - to nie są najbardziej instagramowe tematy świata, ale są bardzo potrzebne.
+
+### AppSec / DevSecOps
+
+Bo jeśli tempo produkcji softu rośnie, to ktoś musi pilnować, żeby nie produkować dziur szybciej niż feature’ów.
+Zwłaszcza teraz, gdy coraz więcej rzeczy powstaje w trybie „byle szybciej”.
+
+### Incident Response / SOC
+
+Bo ataki nie zwolniły.
+Wręcz przeciwnie.
+Automatyzacja po stronie atakujących tylko dokłada presji.
+Ktoś ten syf musi umieć rozumieć, filtrować i ogarniać.
+
+### GRC / compliance / regulacje
+
+Bo dla części firm bezpieczeństwo nie jest już fanaberią.
+Jest obowiązkiem.
+I to tworzy realne zapotrzebowanie na ludzi, którzy rozumieją wymagania, proces, porządek, audyt i wdrożenie tego w praktyce.
+
+### AI / LLM Security
+
+Bo wdrożyć model jest łatwiej niż wdrożyć go mądrze.
+A to będzie tylko rosło.
+
+To nie znaczy, że wszystko inne nie ma sensu.
+To znaczy tylko tyle, że warto widzieć, gdzie rynek naprawdę odczuwa ciężar.
+
+---
+
+## Pieniądze nie idą za samym tytułem. Idą za odpowiedzialnością i rzadkością.
+
+To też warto sobie przypominać, bo internet lubi budować skróty.
+
+Duże pieniądze nie biorą się z tego, że ktoś ma modny nagłówek.
+Nie biorą się z tego, że ktoś brzmi branżowo.
+Nie biorą się z tego, że ktoś wygląda dobrze na bannerze.
+
+Biorą się z tego, że umiesz robić trudne rzeczy.
+Że potrafisz udźwignąć odpowiedzialność.
+Że potrafisz ogarniać problemy, których inni nie umieją albo nie chcą dotykać.
+Że dajesz firmie realny wpływ.
+
+To dlatego specjalizacja, ciężar i dowożenie są tak ważne.
+Bo finalnie rynek płaci nie za deklarację, tylko za zdolność uniesienia problemu.
+
+---
+
+## Najważniejsze, co chcę sobie po tym zostawić
+
+Jeśli miałbym z tego wszystkiego wyciągnąć jedno zdanie, to byłoby chyba właśnie to:
+
+**nie chcę budować profilu człowieka, który „chce wejść do cybersecurity”. Chcę budować profil człowieka, któremu można oddać konkretny problem i mieć poczucie, że tego nie rozwali.**
+
+To zmienia perspektywę na wszystko.
+
+Na naukę.
+Na certyfikaty.
+Na publikowanie.
+Na CV.
+Na wybór specjalizacji.
+Na rozmowy.
+Na własny rozwój.
+
+Bo wtedy przestajesz pytać:
+„jak wyglądać jak ktoś z branży?”
+i zaczynasz pytać:
+**„co zrobić, żeby naprawdę być dla tej branży użytecznym?”**
+
+I chyba właśnie to jest dziś najuczciwsze podsumowanie całego tematu:
+
+Cybersecurity nadal daje ogromne możliwości.
+Ale coraz mniej toleruje chaos, ogólność i granie pozorów.
+
+To już nie jest moment na kolekcjonowanie buzzwordów.
+To nie jest moment na bycie „trochę od wszystkiego”.
+To nie jest moment na chowanie swojej pracy do szuflady.
+To nie jest moment na liczenie, że sama zajawka poniesie dalej.
+
+To jest moment na budowanie ciężaru.
+Na budowanie czytelności.
+Na robienie rzeczy, które zostawiają ślad.
+Na pokazanie, że za zainteresowaniem idzie też robota.
+
+I szczerze?
+To wcale nie jest zła wiadomość.
+
+Bo jeśli naprawdę robisz swoje, uczysz się świadomie, pokazujesz proces i budujesz coś spójnego, to dalej da się z tego zrobić bardzo mocną drogę.
+
+Tylko już nie na skróty.
+I bardzo dobrze.

