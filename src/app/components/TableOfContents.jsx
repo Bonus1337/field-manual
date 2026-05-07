@@ -14,12 +14,14 @@ export function TableOfContents({ items, activeId, onScrollTo, label }) {
     >
       <div
         style={{
-          fontSize: "9px",
-          letterSpacing: "0.14em",
-          fontWeight: 700,
-          color: T.textMuted,
-          marginBottom: "12px",
           fontFamily: T.mono,
+          fontSize: "9px",
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: T.textDim,
+          marginBottom: "14px",
+          paddingBottom: "10px",
+          borderBottom: `1px solid ${T.border}`,
         }}
       >
         {label}
@@ -34,42 +36,50 @@ export function TableOfContents({ items, activeId, onScrollTo, label }) {
         }}
       >
         {items.length === 0 ? (
-          <span style={{ fontSize: "12px", color: T.textMuted }}>-</span>
+          <span
+            style={{
+              fontFamily: T.mono,
+              fontSize: "11px",
+              color: T.textDim,
+            }}
+          >
+            -
+          </span>
         ) : (
-          items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onScrollTo(item.id)}
-              style={{
-                textAlign: "left",
-                padding: "5px 8px",
-                borderRadius: "4px",
-                background:
-                  activeId === item.id ? "rgba(255,255,255,0.04)" : "transparent",
-                borderLeft: `2px solid ${activeId === item.id ? T.gen : "transparent"}`,
-                border: "none",
-                outline: "none",
-                cursor: "pointer",
-                fontFamily: T.mono,
-                fontSize: "12px",
-                color: activeId === item.id ? T.textBright : T.textMuted,
-                transition: "all 0.1s",
-                lineHeight: "1.35",
-              }}
-              onMouseEnter={(e) => {
-                if (activeId !== item.id) {
-                  e.currentTarget.style.color = T.text;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeId !== item.id) {
-                  e.currentTarget.style.color = T.textMuted;
-                }
-              }}
-            >
-              {item.text}
-            </button>
-          ))
+          items.map((item) => {
+            const isActive = activeId === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onScrollTo(item.id)}
+                style={{
+                  textAlign: "left",
+                  padding: "5px 10px",
+                  background: isActive ? T.accDim : "transparent",
+                  borderLeft: `2px solid ${isActive ? T.acc : "transparent"}`,
+                  borderTop: "none",
+                  borderRight: "none",
+                  borderBottom: "none",
+                  borderRadius: "0 2px 2px 0",
+                  outline: "none",
+                  cursor: "pointer",
+                  fontFamily: T.mono,
+                  fontSize: "11px",
+                  color: isActive ? T.textBright : T.textMuted,
+                  lineHeight: 1.45,
+                  transition: "color 0.1s, background 0.1s, border-color 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.color = T.text;
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.color = T.textMuted;
+                }}
+              >
+                {item.text}
+              </button>
+            );
+          })
         )}
       </div>
     </div>

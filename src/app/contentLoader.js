@@ -9,34 +9,22 @@ function stripQuotes(value) {
 
 function parseInlineArray(value) {
   const trimmed = String(value ?? "").trim();
-
   if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return [];
-
   const inner = trimmed.slice(1, -1).trim();
   if (!inner) return [];
-
-  return inner
-    .split(",")
-    .map((item) => stripQuotes(item))
-    .filter(Boolean);
+  return inner.split(",").map(stripQuotes).filter(Boolean);
 }
 
 function parseBracketArray(lines) {
   const items = [];
-
   for (const rawLine of lines) {
     let line = String(rawLine ?? "").trim();
-
     if (!line || line === "[" || line === "]") continue;
-
     line = line.replace(/^\[/, "").replace(/\]$/, "").trim();
     line = line.replace(/,$/, "").trim();
-
     if (!line) continue;
-
     items.push(stripQuotes(line));
   }
-
   return items;
 }
 
@@ -47,7 +35,6 @@ function parseFrontmatter(raw) {
   if (!/^---\s*(\r?\n|$)/.test(normalizedRaw)) return fm;
 
   const lines = normalizedRaw.split(/\r?\n/);
-
   if (lines[0].trim() !== "---") return fm;
 
   let endIndex = -1;
@@ -57,7 +44,6 @@ function parseFrontmatter(raw) {
       break;
     }
   }
-
   if (endIndex === -1) return fm;
 
   const headerLines = lines.slice(1, endIndex);
@@ -65,13 +51,11 @@ function parseFrontmatter(raw) {
     .slice(endIndex + 1)
     .join("\n")
     .replace(/^\s*\n/, "");
-
   const data = {};
 
   for (let i = 0; i < headerLines.length; i++) {
     const rawLine = headerLines[i];
     const trimmed = rawLine.trim();
-
     if (!trimmed || trimmed.startsWith("#")) continue;
 
     const idx = trimmed.indexOf(":");
@@ -88,15 +72,11 @@ function parseFrontmatter(raw) {
     if (value === "" && headerLines[i + 1]?.trim().startsWith("[")) {
       const arrayLines = [];
       i += 1;
-
       while (i < headerLines.length) {
-        const line = headerLines[i];
-        arrayLines.push(line);
-
-        if (line.trim().endsWith("]")) break;
+        arrayLines.push(headerLines[i]);
+        if (headerLines[i].trim().endsWith("]")) break;
         i += 1;
       }
-
       data[key] = parseBracketArray(arrayLines);
       continue;
     }
@@ -108,7 +88,6 @@ function parseFrontmatter(raw) {
         arrayLines.push(headerLines[i]);
         if (headerLines[i].trim().endsWith("]")) break;
       }
-
       data[key] = parseBracketArray(arrayLines);
       continue;
     }
@@ -134,7 +113,6 @@ function normalizePath(p) {
 function getNavFromPath(path, localePrefix) {
   const rel = path.startsWith(localePrefix) ? path.slice(localePrefix.length) : path;
   const parts = rel.split("/").filter(Boolean);
-
   const root = parts[0] || "general";
   const isWriteup = parts[1] === "writeups";
   const topic = isWriteup ? parts[2] || "misc" : null;
@@ -145,6 +123,17 @@ function getNavFromPath(path, localePrefix) {
     topic,
     navPath: isWriteup ? [root, "writeups", topic] : [root],
   };
+}
+
+function toArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "string") return [value];
+  return [];
+}
+
+function orNull(value) {
+  const s = String(value ?? "").trim();
+  return s && s !== "unknown" ? s : null;
 }
 
 function loadLocale(locale) {
@@ -170,21 +159,32 @@ function loadLocale(locale) {
       id,
       locale,
       title: data.title || id,
-      team: data.team || "neutral",
-      category: data.category || autoCategory,
-      tags: Array.isArray(data.tags) ? data.tags : data.tags ? [data.tags] : [],
-      difficulty: data.difficulty || "unknown",
-      shortDescription: data.shortDescription || "",
-      updatedAt: data.updatedAt || null,
-      sourcePath: path.replace("/content/", "content/"),
       content,
       toc: buildToc(content),
+      sourcePath: path.replace("/content/", "content/"),
+
+      team: data.team || "neutral",
+      category: data.category || autoCategory,
+
+      domain: orNull(data.domain),
+      section: orNull(data.section),
+      type: orNull(data.type),
+      angle: orNull(data.angle),
+      sourceTrack: orNull(data.sourceTrack || data.source),
+
+      tags: toArray(data.tags),
+      sources: toArray(data.sources),
+
+      difficulty: orNull(data.difficulty),
+
+      updatedAt: orNull(data.updatedAt || data.date),
+      date: orNull(data.date || data.updatedAt),
+
+      shortDescription: String(data.shortDescription || "").trim(),
+
+      readingTime: data.readingTime ? parseInt(data.readingTime, 10) || null : null,
+
       nav,
-      sources: Array.isArray(data.sources)
-        ? data.sources
-        : data.sources
-          ? [data.sources]
-          : [],
     });
   }
 

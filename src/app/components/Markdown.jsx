@@ -17,7 +17,6 @@ export function Markdown({ content }) {
     const baseId = m ? m[1] : slugify(visibleText);
     const prev = usedIds[baseId] ?? 0;
     usedIds[baseId] = prev + 1;
-
     return {
       id: prev > 0 ? `${baseId}-${prev + 1}` : baseId,
       visibleText,
@@ -29,10 +28,10 @@ export function Markdown({ content }) {
 
   useEffect(() => {
     if (!lb.open) return;
-    const prevOverflow = document.body.style.overflow;
+    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = prevOverflow;
+      document.body.style.overflow = prev;
     };
   }, [lb.open]);
 
@@ -61,7 +60,7 @@ export function Markdown({ content }) {
         : level === 2
           ? [
               T.textBright,
-              <span key="p" style={{ color: T.gen, marginRight: "8px", opacity: 0.9 }}>
+              <span key="p" style={{ color: T.acc, marginRight: "8px", opacity: 0.8 }}>
                 #
               </span>,
               "17px",
@@ -70,15 +69,15 @@ export function Markdown({ content }) {
           : level === 3
             ? [
                 T.text,
-                <span key="p" style={{ color: T.blue, marginRight: "8px", opacity: 0.8 }}>
+                <span key="p" style={{ color: T.blue, marginRight: "8px", opacity: 0.7 }}>
                   ##
                 </span>,
                 "15px",
                 "22px",
               ]
             : [
-                T.text,
-                <span key="p" style={{ color: T.textMuted, marginRight: "8px" }}>
+                T.textMuted,
+                <span key="p" style={{ color: T.textDim, marginRight: "8px" }}>
                   ###
                 </span>,
                 "14px",
@@ -112,8 +111,7 @@ export function Markdown({ content }) {
 
   const shouldWrapCodeBlock = (language) => {
     const lang = String(language || "").toLowerCase();
-
-    const noWrapLanguages = new Set([
+    const noWrap = new Set([
       "bash",
       "sh",
       "shell",
@@ -124,8 +122,7 @@ export function Markdown({ content }) {
       "terminal",
       "console",
     ]);
-
-    return !noWrapLanguages.has(lang);
+    return !noWrap.has(lang);
   };
 
   return (
@@ -136,6 +133,7 @@ export function Markdown({ content }) {
           pre({ children }) {
             return <>{children}</>;
           },
+
           h1({ children }) {
             return <Heading level={1}>{children}</Heading>;
           },
@@ -148,6 +146,7 @@ export function Markdown({ content }) {
           h4({ children }) {
             return <Heading level={4}>{children}</Heading>;
           },
+
           p({ children }) {
             return (
               <p style={{ color: T.text, lineHeight: "1.85", margin: "12px 0" }}>
@@ -155,6 +154,7 @@ export function Markdown({ content }) {
               </p>
             );
           },
+
           ul({ children }) {
             return (
               <ul style={{ margin: "12px 0", paddingLeft: 0, listStyle: "none" }}>
@@ -162,6 +162,7 @@ export function Markdown({ content }) {
               </ul>
             );
           },
+
           ol({ children }) {
             return (
               <ol style={{ margin: "12px 0", paddingLeft: "18px", color: T.text }}>
@@ -169,6 +170,7 @@ export function Markdown({ content }) {
               </ol>
             );
           },
+
           li({ children, ordered }) {
             return ordered ? (
               <li style={{ color: T.text, margin: "5px 0", lineHeight: "1.7" }}>
@@ -186,7 +188,7 @@ export function Markdown({ content }) {
               >
                 <span
                   style={{
-                    color: T.gen,
+                    color: T.acc,
                     flexShrink: 0,
                     marginTop: "1px",
                     fontSize: "12px",
@@ -198,6 +200,7 @@ export function Markdown({ content }) {
               </li>
             );
           },
+
           a({ href, children }) {
             return (
               <a
@@ -210,7 +213,7 @@ export function Markdown({ content }) {
                   borderBottom: `1px solid ${T.blueBorder}`,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#7dd3fc";
+                  e.currentTarget.style.color = T.textBright;
                   e.currentTarget.style.borderBottomColor = T.blue;
                 }}
                 onMouseLeave={(e) => {
@@ -222,14 +225,17 @@ export function Markdown({ content }) {
               </a>
             );
           },
+
           strong({ children }) {
             return (
               <strong style={{ color: T.textBright, fontWeight: 700 }}>{children}</strong>
             );
           },
+
           em({ children }) {
             return <em style={{ color: T.amber, fontStyle: "italic" }}>{children}</em>;
           },
+
           hr() {
             return (
               <hr
@@ -241,21 +247,23 @@ export function Markdown({ content }) {
               />
             );
           },
+
           blockquote({ children }) {
             return (
               <blockquote
                 style={{
-                  borderLeft: `3px solid ${T.amber}`,
-                  background: "rgba(245,158,11,0.06)",
+                  borderLeft: `3px solid ${T.acc}`,
+                  background: T.accDim,
                   padding: "12px 18px",
                   margin: "16px 0",
-                  borderRadius: "0 4px 4px 0",
+                  borderRadius: "0 3px 3px 0",
                 }}
               >
                 {children}
               </blockquote>
             );
           },
+
           table({ children }) {
             return (
               <div style={{ overflowX: "auto", margin: "16px 0" }}>
@@ -272,6 +280,7 @@ export function Markdown({ content }) {
               </div>
             );
           },
+
           th({ children }) {
             return (
               <th
@@ -289,19 +298,21 @@ export function Markdown({ content }) {
               </th>
             );
           },
+
           td({ children }) {
             return (
               <td
                 style={{
                   color: T.text,
                   padding: "8px 14px",
-                  borderBottom: `1px solid ${T.textDim}`,
+                  borderBottom: `1px solid ${T.border}`,
                 }}
               >
                 {children}
               </td>
             );
           },
+
           img({ src, alt }) {
             const imgSrc = String(src || "");
             const imgAlt = String(alt || "");
@@ -314,7 +325,7 @@ export function Markdown({ content }) {
                   width: "100%",
                   background: T.bgCard,
                   border: `1px solid ${T.border}`,
-                  borderRadius: "6px",
+                  borderRadius: "3px",
                   overflow: "hidden",
                   cursor: "zoom-in",
                   padding: 0,
@@ -330,6 +341,7 @@ export function Markdown({ content }) {
               </button>
             );
           },
+
           code({ inline, className, children }) {
             const raw = String(children ?? "");
             const trimmed = raw.replace(/\n$/, "");
@@ -341,12 +353,12 @@ export function Markdown({ content }) {
                 <code
                   style={{
                     fontFamily: T.mono,
-                    background: "rgba(0,0,0,0.4)",
+                    background: "rgba(0,0,0,0.35)",
                     border: `1px solid ${T.border}`,
                     borderRadius: "3px",
                     padding: "1px 6px",
                     fontSize: "0.9em",
-                    color: T.cyan,
+                    color: T.acc,
                     whiteSpace: "break-spaces",
                     overflowWrap: "anywhere",
                     wordBreak: "break-word",
@@ -365,10 +377,10 @@ export function Markdown({ content }) {
                     fontFamily: T.mono,
                     background: "#030507",
                     border: `1px solid ${T.border}`,
-                    borderRadius: "4px",
+                    borderRadius: "3px",
                     padding: "3px 10px",
                     fontSize: "0.88em",
-                    color: T.cyan,
+                    color: T.acc,
                     maxWidth: "100%",
                     whiteSpace: "pre-wrap",
                     overflowWrap: "anywhere",
@@ -401,8 +413,7 @@ export function Markdown({ content }) {
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "rgba(0,0,0,0.88)",
-            backdropFilter: "blur(6px)",
+            background: "rgba(0,0,0,0.9)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -424,7 +435,7 @@ export function Markdown({ content }) {
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                color: T.text,
+                color: T.textMuted,
               }}
             >
               <X size={13} />
@@ -436,7 +447,7 @@ export function Markdown({ content }) {
               style={{
                 maxWidth: "94vw",
                 maxHeight: "90vh",
-                borderRadius: "6px",
+                borderRadius: "4px",
                 border: `1px solid ${T.border}`,
               }}
             />

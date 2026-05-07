@@ -1,215 +1,217 @@
-import React, { useState } from "react";
-import { Clock } from "lucide-react";
-import { T, ts } from "../constants/theme";
+import React, { useMemo, useState } from "react";
+import { T, ts, normalizeTeam } from "../constants/theme";
+import { UI } from "../constants/config";
 
-export function ArticleCard({ doc, onGoDoc }) {
-  const [hov, setHov] = useState(false);
-  const m = ts(doc.team);
-  const shortDescription = String(doc.shortDescription || "").trim();
+function getDocDomain(doc) {
+  return doc?.domain || doc?.nav?.root || doc?.category || "general";
+}
+function getDocSection(doc) {
+  return doc?.section || doc?.nav?.group || doc?.nav?.sub || "";
+}
+function prettyLabel(value) {
+  const raw = String(value || "")
+    .replace(/^\d+_/, "")
+    .replace(/-/g, " ")
+    .replace(/_/g, " ")
+    .trim();
+  if (!raw) return "";
+  return raw
+    .split(" ")
+    .map((w) => {
+      const l = w.toLowerCase();
+      if (l === "cti") return "CTI";
+      if (l === "soc") return "SOC";
+      if (l === "osint") return "OSINT";
+      if (l === "ejpt") return "eJPT";
+      if (l === "xss") return "XSS";
+      if (l === "sqli") return "SQLi";
+      if (l === "csrf") return "CSRF";
+      if (l === "ai") return "AI";
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    })
+    .join(" ");
+}
+function getDomainLabel(copy, domain) {
+  return copy?.domainLabels?.[domain] || prettyLabel(domain);
+}
+function getDiffColor(d) {
+  const v = String(d || "").toLowerCase();
+  if (v === "easy" || v === "apprentice") return T.acc;
+  if (v === "medium" || v === "practitioner") return T.amber;
+  if (v === "hard" || v === "expert") return T.red;
+  return T.textMuted;
+}
+function getReadingEstimate(doc) {
+  const raw =
+    doc?.content ||
+    doc?.body ||
+    doc?.markdown ||
+    doc?.shortDescription ||
+    doc?.title ||
+    "";
+  return Math.max(
+    1,
+    Math.ceil(String(raw).trim().split(/\s+/).filter(Boolean).length / 220)
+  );
+}
+
+export function ArticleCard({ doc, onGoDoc, safeLang = "pl" }) {
+  const [hovered, setHovered] = useState(false);
+
+  const copy = UI?.[safeLang]?.homeView || UI.pl.homeView;
+  const domain = getDocDomain(doc);
+  const section = getDocSection(doc);
+  const teamMeta = ts(normalizeTeam(doc?.team));
+  const tags = Array.isArray(doc?.tags) ? doc.tags.slice(0, 7) : [];
+  const minutes = useMemo(() => getReadingEstimate(doc), [doc]);
+  const domainLabel = getDomainLabel(copy, domain);
+  const sectionLabel = prettyLabel(section);
+  const dateStr = String(doc?.updatedAt || doc?.date || "").slice(0, 10);
 
   return (
-    <button
+    <div
       onClick={() => onGoDoc(doc.id)}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        display: "block",
-        width: "100%",
-        textAlign: "left",
-        background: hov
-          ? "linear-gradient(180deg, rgba(12,16,24,1) 0%, rgba(9,13,21,1) 100%)"
-          : "linear-gradient(180deg, rgba(10,14,22,1) 0%, rgba(7,10,17,1) 100%)",
-        border: `1px solid ${hov ? m.border : T.border}`,
-        borderLeft: `3px solid ${hov ? m.color : m.border}`,
-        borderRadius: "12px",
-        padding: "26px 28px",
+        padding: "22px 0",
+        borderBottom: `1px solid ${T.border}`,
         cursor: "pointer",
-        transition: "all 0.18s ease",
-        boxShadow: hov
-          ? m.glow
-          : "0 10px 30px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.02)",
+        transition: "background 0.12s",
         fontFamily: T.mono,
-        position: "relative",
-        overflow: "hidden",
       }}
     >
       <div
         style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            hov && doc.team === "red"
-              ? "linear-gradient(90deg, rgba(255,58,92,0.06) 0%, transparent 18%)"
-              : hov && doc.team === "blue"
-                ? "linear-gradient(90deg, rgba(56,189,248,0.05) 0%, transparent 18%)"
-                : hov
-                  ? "linear-gradient(90deg, rgba(34,197,94,0.04) 0%, transparent 18%)"
-                  : "none",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          marginBottom: "9px",
+          flexWrap: "wrap",
         }}
-      />
-
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <div
+      >
+        <span
           style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "16px",
-            flexWrap: "wrap",
-            marginBottom: "18px",
+            fontSize: "9px",
+            fontWeight: 600,
+            letterSpacing: "0.10em",
+            textTransform: "uppercase",
+            padding: "2px 7px",
+            borderRadius: "2px",
+            color: teamMeta.color,
+            border: `1px solid ${teamMeta.border}`,
+            background: teamMeta.dim,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flexWrap: "wrap",
-              minWidth: 0,
-            }}
-          >
-            <m.Icon size={12} style={{ color: m.color }} />
+          {teamMeta.label.toLowerCase()}
+        </span>
 
+        <span
+          style={{
+            fontSize: "10px",
+            color: T.textMuted,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+          }}
+        >
+          {domainLabel}
+        </span>
+
+        {sectionLabel && (
+          <>
+            <span style={{ color: T.textDim, fontSize: "9px" }}>·</span>
             <span
               style={{
-                fontSize: "11px",
-                letterSpacing: "0.14em",
-                fontWeight: 700,
-                color: m.color,
+                fontSize: "10px",
+                color: T.textDim,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
               }}
             >
-              {m.label}
+              {sectionLabel}
             </span>
-
-            {doc.category && (
-              <>
-                <span style={{ color: T.textDim, fontSize: "10px" }}>·</span>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: T.textMuted,
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  {doc.category}
-                </span>
-              </>
-            )}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              flexWrap: "wrap",
-            }}
-          >
-            {doc.difficulty && (
-              <span
-                style={{
-                  fontSize: "11px",
-                  color: T.textMuted,
-                  background: "rgba(255,255,255,0.025)",
-                  border: `1px solid ${T.border}`,
-                  borderRadius: "6px",
-                  padding: "5px 10px",
-                }}
-              >
-                {doc.difficulty}
-              </span>
-            )}
-
-            {doc.updatedAt && (
-              <span
-                style={{
-                  fontSize: "11px",
-                  color: T.textMuted,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                }}
-              >
-                <Clock size={11} style={{ opacity: 0.7 }} />
-                {doc.updatedAt}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div
-          style={{
-            color: hov ? T.textBright : "#d7deea",
-            fontWeight: 700,
-            fontSize: "17px",
-            lineHeight: "1.5",
-            marginBottom: shortDescription ? "12px" : "18px",
-            transition: "color 0.15s",
-            maxWidth: "1100px",
-          }}
-        >
-          {doc.title}
-        </div>
-
-        {shortDescription && (
-          <div
-            style={{
-              color: hov ? "#9db0c9" : T.textMuted,
-              fontSize: "13px",
-              lineHeight: "1.85",
-              marginBottom: "18px",
-              maxWidth: "980px",
-              transition: "color 0.15s",
-            }}
-          >
-            {shortDescription}
-          </div>
+          </>
         )}
 
-        <div
+        {doc.difficulty && (
+          <>
+            <span style={{ color: T.textDim, fontSize: "9px" }}>·</span>
+            <span
+              style={{
+                fontSize: "9px",
+                letterSpacing: "0.06em",
+                color: getDiffColor(doc.difficulty),
+                textTransform: "lowercase",
+              }}
+            >
+              {doc.difficulty}
+            </span>
+          </>
+        )}
+
+        <span
           style={{
-            borderTop: `1px solid ${T.border}`,
-            paddingTop: "16px",
+            marginLeft: "auto",
             display: "flex",
+            gap: "8px",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: "14px",
-            flexWrap: "wrap",
           }}
         >
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
-            {doc.tags?.slice(0, 6).map((tag) => (
-              <span
-                key={tag}
-                style={{
-                  fontSize: "10px",
-                  color: T.textMuted,
-                  background: "rgba(255,255,255,0.02)",
-                  border: `1px solid ${T.border}`,
-                  borderRadius: "6px",
-                  padding: "5px 10px",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <div
-            style={{
-              fontSize: "12px",
-              color: hov ? T.textBright : T.textMuted,
-              letterSpacing: "0.05em",
-              transition: "color 0.15s",
-              whiteSpace: "nowrap",
-            }}
-          >
-            read note →
-          </div>
-        </div>
+          <span style={{ fontSize: "10px", color: T.textMuted }}>{minutes} min</span>
+          {dateStr && (
+            <span style={{ fontSize: "9px", color: T.textDim }}>{dateStr}</span>
+          )}
+        </span>
       </div>
-    </button>
+
+      <div
+        style={{
+          fontSize: "17px",
+          fontWeight: 600,
+          lineHeight: 1.45,
+          letterSpacing: "-0.015em",
+          marginBottom: doc.shortDescription ? "8px" : tags.length ? "10px" : "0",
+          color: hovered ? T.textBright : T.text,
+          transition: "color 0.12s",
+          maxWidth: "860px",
+        }}
+      >
+        {doc.title}
+      </div>
+
+      {doc.shortDescription && (
+        <div
+          style={{
+            fontSize: "13px",
+            color: T.textMuted,
+            lineHeight: 1.75,
+            marginBottom: tags.length ? "12px" : "0",
+            maxWidth: "760px",
+          }}
+        >
+          {doc.shortDescription}
+        </div>
+      )}
+
+      {tags.length > 0 && (
+        <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              style={{
+                fontSize: "9px",
+                color: T.textMuted,
+                padding: "2px 7px",
+                border: `1px solid ${T.border}`,
+                borderRadius: "2px",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

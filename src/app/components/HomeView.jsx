@@ -1,231 +1,760 @@
-import React, { useState, useMemo } from "react";
-import { T } from "../constants/theme";
-import { PINNED_SET } from "../constants/config";
+import React, { useMemo, useState } from "react";
+import { ArrowRight, Crosshair, Layers3, Radar, Shield, Terminal } from "lucide-react";
+import { T, ts, normalizeTeam, getAccentByDomain } from "../constants/theme";
+import { UI, PINNED_SET } from "../constants/config";
 import { sortByDateDesc } from "../utils/sorting";
 import { ArticleCard } from "./ArticleCard";
 
-export function HomeView({ docs, onGoDoc }) {
-  const [filter, setFilter] = useState("all");
+function normalizeDomainKey(value) {
+  return String(value || "general")
+    .replace(/^\d+_/, "")
+    .trim()
+    .toLowerCase();
+}
 
-  const nonPinned = useMemo(() => docs.filter((d) => !PINNED_SET.has(d.id)), [docs]);
+function getDocDomain(doc) {
+  return normalizeDomainKey(doc?.domain || doc?.nav?.root || doc?.category || "general");
+}
 
-  const platforms = useMemo(() => {
-    const s = new Set();
-    nonPinned.forEach((d) => {
-      if (d.nav?.root && d.nav.root !== "general") s.add(d.nav.root);
-    });
-    return Array.from(s).sort();
-  }, [nonPinned]);
+function prettyLabel(value) {
+  const raw = String(value || "")
+    .replace(/^\d+_/, "")
+    .replace(/-/g, " ")
+    .replace(/_/g, " ")
+    .trim();
+  if (!raw) return "General";
+  return raw
+    .split(" ")
+    .map((w) => {
+      const l = w.toLowerCase();
+      if (l === "cti") return "CTI";
+      if (l === "soc") return "SOC";
+      if (l === "osint") return "OSINT";
+      if (l === "ejpt") return "eJPT";
+      if (l === "ai") return "AI";
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    })
+    .join(" ");
+}
 
-  const filters = [
-    { key: "all", label: "ALL" },
-    { key: "red", label: "RED" },
-    { key: "blue", label: "BLUE" },
-    ...platforms.map((p) => ({ key: p, label: p.toUpperCase() })),
-  ];
+function getDomainLabel(copy, domain) {
+  return copy?.domainLabels?.[domain] || prettyLabel(domain);
+}
 
-  const visible = useMemo(() => {
-    const all = [...nonPinned].sort(sortByDateDesc);
+function getTeamVisual(key) {
+  if (key === "all")
+    return {
+      key: "all",
+      label: "All",
+      color: T.acc,
+      dim: T.accDim,
+      border: T.accBorder,
+    };
+  return ts(key);
+}
 
-    if (filter === "all") return all;
-    if (filter === "red" || filter === "blue") {
-      return all.filter((d) => d.team === filter);
-    }
-
-    return all.filter(
-      (d) => d.nav?.root === filter || d.category?.toLowerCase() === filter
-    );
-  }, [nonPinned, filter]);
-
-  const stats = useMemo(
-    () => ({
-      total: nonPinned.length,
-      red: nonPinned.filter((d) => d.team === "red").length,
-      blue: nonPinned.filter((d) => d.team === "blue").length,
-    }),
-    [nonPinned]
+function getFeatured(docs) {
+  const s = [...docs].sort(sortByDateDesc);
+  return (
+    s.find((d) => d.id === "network-infrastructure-security-introduction") ||
+    s.find((d) => d.id === "web-pentest-understanding-the-app-not-magic-payloads") ||
+    s.find((d) => d.id === "offsec-intro") ||
+    s[0]
   );
+}
+
+function RecentItem({ doc, copy, onGoDoc }) {
+  const [hovered, setHovered] = useState(false);
+  const domain = getDocDomain(doc);
+  const team = ts(normalizeTeam(doc.team));
 
   return (
-    <div style={{ minHeight: "100%", background: T.bg, fontFamily: T.mono }}>
+    <div
+      onClick={() => onGoDoc(doc.id)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: "12px 0",
+        borderBottom: `1px solid ${T.border}`,
+        cursor: "pointer",
+      }}
+    >
       <div
         style={{
-          padding: "48px 36px 34px",
-          borderBottom: `1px solid ${T.border}`,
-          background:
-            "linear-gradient(180deg, rgba(56,189,248,0.03) 0%, rgba(255,58,92,0.02) 35%, transparent 75%)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "4px",
         }}
       >
-        <div style={{ maxWidth: "1180px", margin: "0 auto" }}>
-          <div
-            style={{
-              color: T.textMuted,
-              fontSize: "11px",
-              marginBottom: "10px",
-              letterSpacing: "0.06em",
-            }}
-          >
-            <span style={{ color: T.gen }}>$</span>{" "}
-            <span style={{ color: T.textMuted }}>cat /field-manual/feed.md</span>
-          </div>
+        <span
+          style={{
+            fontFamily: T.mono,
+            fontSize: "9px",
+            letterSpacing: "0.10em",
+            textTransform: "uppercase",
+            color: T.textMuted,
+          }}
+        >
+          {getDomainLabel(copy, domain)}
+        </span>
+        <span
+          style={{
+            fontFamily: T.mono,
+            fontSize: "9px",
+            fontWeight: 600,
+            color: team.color,
+          }}
+        >
+          {team.label.toLowerCase()}
+        </span>
+      </div>
 
-          <h1
-            style={{
-              color: T.textBright,
-              fontSize: "28px",
-              fontWeight: 700,
-              margin: "0 0 10px",
-              fontFamily: T.mono,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Red/Blue Field Manual
-          </h1>
+      <div
+        style={{
+          fontSize: "12px",
+          fontWeight: 500,
+          lineHeight: 1.45,
+          color: hovered ? T.textBright : T.text,
+          transition: "color 0.12s",
+        }}
+      >
+        {doc.title}
+      </div>
 
-          <p
-            style={{
-              color: T.textMuted,
-              fontSize: "13px",
-              margin: "0 0 30px",
-              maxWidth: "760px",
-              lineHeight: "1.7",
-            }}
-          >
-            Offensive &amp; defensive security notes - web application security, pentest
-            workflow, CTF writeups, eJPT prep, mindset i praktyczne case-study.
-          </p>
+      {doc.readingTime && (
+        <div style={{ fontSize: "10px", color: T.textMuted, marginTop: "3px" }}>
+          {doc.readingTime} min
+        </div>
+      )}
+    </div>
+  );
+}
 
-          <div style={{ display: "flex", gap: "36px", flexWrap: "wrap" }}>
-            {[
-              { label: "dokumenty", val: stats.total, color: T.textBright },
-              { label: "red team", val: stats.red, color: T.red },
-              { label: "blue team", val: stats.blue, color: T.blue },
-            ].map((s2) => (
+function PathCard({ num, heading, desc, cta, onClick, isLast = false }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: "26px 28px",
+        cursor: "pointer",
+        background: hovered ? T.bgCard : "transparent",
+        transition: "background 0.12s",
+        borderRight: isLast ? "none" : `1px solid ${T.border}`,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: T.mono,
+          fontSize: "36px",
+          fontWeight: 500,
+          color: hovered ? T.border : T.textDim,
+          lineHeight: 1,
+          marginBottom: "14px",
+          transition: "color 0.12s",
+        }}
+      >
+        {num}
+      </div>
+
+      <div
+        style={{
+          fontSize: "13px",
+          fontWeight: 600,
+          color: T.textBright,
+          marginBottom: "6px",
+        }}
+      >
+        {heading}
+      </div>
+
+      <div
+        style={{
+          fontSize: "11px",
+          color: T.textMuted,
+          lineHeight: 1.65,
+        }}
+      >
+        {desc}
+      </div>
+
+      <div
+        style={{
+          fontFamily: T.mono,
+          fontSize: "10px",
+          marginTop: "14px",
+          color: hovered ? T.acc : T.textMuted,
+          transition: "color 0.1s",
+        }}
+      >
+        {cta}
+      </div>
+    </div>
+  );
+}
+
+function TeamTab({ f, active, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  const meta = getTeamVisual(f.key);
+  const color = f.key === "all" ? T.acc : meta.color;
+  const Icon = f.Icon;
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        fontFamily: T.mono,
+        fontSize: "10px",
+        letterSpacing: "0.04em",
+        color: active ? color : hovered ? T.text : T.textMuted,
+        padding: "4px 14px 14px",
+        background: "none",
+        border: "none",
+        borderBottom: `2px solid ${active ? color : "transparent"}`,
+        cursor: "pointer",
+        transition: "color 0.1s, border-color 0.1s",
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+      }}
+    >
+      {Icon && <Icon size={11} />}
+      {f.label}
+    </button>
+  );
+}
+
+function DomainChip({ label, count, active, accent, onClick }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        fontFamily: T.mono,
+        fontSize: "10px",
+        padding: "3px 10px",
+        marginRight: "4px",
+        flexShrink: 0,
+        border: `1px solid ${
+          active ? accent + "55" : hovered ? T.borderHover : T.border
+        }`,
+        background: active ? accent + "12" : "transparent",
+        color: active ? accent : hovered ? T.text : T.textMuted,
+        cursor: "pointer",
+        borderRadius: "2px",
+        transition: "all 0.1s",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+      }}
+    >
+      {label}
+      <span style={{ opacity: 0.45, fontSize: "9px" }}>{count}</span>
+    </button>
+  );
+}
+
+export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
+  const copy = UI?.[safeLang]?.homeView || UI.pl.homeView;
+  const isPl = safeLang === "pl";
+
+  const [teamFilter, setTeamFilter] = useState("all");
+  const [domainFilter, setDomainFilter] = useState("all");
+
+  const nonPinned = useMemo(() => docs.filter((d) => !PINNED_SET.has(d.id)), [docs]);
+  const sortedDocs = useMemo(() => [...nonPinned].sort(sortByDateDesc), [nonPinned]);
+  const featured = useMemo(() => getFeatured(sortedDocs), [sortedDocs]);
+  const feedDocs = useMemo(() => [...docs].sort(sortByDateDesc), [docs]);
+  const recentDocs = useMemo(
+    () => sortedDocs.filter((d) => d.id !== featured?.id).slice(0, 4),
+    [sortedDocs, featured]
+  );
+
+  const domainGroups = useMemo(() => {
+    const map = new Map();
+
+    feedDocs.forEach((doc) => {
+      const d = getDocDomain(doc);
+      if (!map.has(d)) map.set(d, []);
+      map.get(d).push(doc);
+    });
+
+    return Array.from(map.entries()).sort(([a], [b]) => {
+      const na = String(a).match(/^(\d+)/)?.[1];
+      const nb = String(b).match(/^(\d+)/)?.[1];
+      if (na && nb) return Number(na) - Number(nb);
+      return String(a).localeCompare(String(b));
+    });
+  }, [feedDocs]);
+
+  const visible = useMemo(
+    () =>
+      feedDocs.filter((doc) => {
+        const tMatch = teamFilter === "all" || normalizeTeam(doc.team) === teamFilter;
+        const dMatch = domainFilter === "all" || getDocDomain(doc) === domainFilter;
+        return tMatch && dMatch;
+      }),
+    [feedDocs, teamFilter, domainFilter]
+  );
+
+  const teamFilters = [
+    { key: "all", label: copy.all, Icon: null },
+    { key: "red", label: copy.redTeam, Icon: Crosshair },
+    { key: "blue", label: copy.blueTeam, Icon: Shield },
+    { key: "red-blue", label: copy.redBlue, Icon: Radar },
+    { key: "neutral", label: copy.neutral, Icon: Layers3 },
+  ];
+
+  const featuredDomain = featured ? getDocDomain(featured) : "general";
+  const featuredTeamMeta = ts(normalizeTeam(featured?.team));
+  const activeLabel =
+    domainFilter === "all" ? copy.allDomains : getDomainLabel(copy, domainFilter);
+
+  const paths = [
+    {
+      num: "01",
+      heading: isPl ? "Zaczynam od zera" : "Starting from scratch",
+      desc: isPl
+        ? "Fundamenty, mindset i pierwsze pojęcia bez zakładania że cokolwiek wiesz."
+        : "Foundations, mindset, and first concepts - no prior knowledge assumed.",
+      cta: "start here →",
+      onClick: () => {
+        setDomainFilter("start-here");
+        setTeamFilter("all");
+      },
+    },
+    {
+      num: "02",
+      heading: isPl ? "Interesuje mnie atak" : "I'm interested in offense",
+      desc: isPl
+        ? "Web security, pentesting, podatności, Burp Suite, laby PortSwigger."
+        : "Web security, pentesting, vulnerabilities, Burp Suite, labs.",
+      cta: "red team path →",
+      onClick: () => {
+        setTeamFilter("red");
+        setDomainFilter("all");
+      },
+    },
+    {
+      num: "03",
+      heading: isPl ? "Interesuje mnie obrona" : "I'm interested in defense",
+      desc: isPl
+        ? "SOC, phishing, Wazuh, SIEM, detekcja i incident response."
+        : "SOC, phishing, Wazuh, SIEM, detection, and incident response.",
+      cta: "blue team path →",
+      onClick: () => {
+        setTeamFilter("blue");
+        setDomainFilter("all");
+      },
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        background: T.bg,
+        fontFamily: T.mono,
+        minHeight: "100%",
+        color: T.text,
+      }}
+    >
+      <div
+        style={{
+          padding: "10px 36px",
+          borderBottom: `1px solid ${T.border}`,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "11px",
+          color: T.textMuted,
+        }}
+      >
+        <Terminal size={12} style={{ color: T.acc }} />
+        <span style={{ color: T.acc }}>$</span>
+        <span>{copy.command}</span>
+        <span style={{ color: T.border, margin: "0 6px" }}>·</span>
+        <span>{copy.mode}</span>
+      </div>
+
+      <section style={{ borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ maxWidth: "1600px", margin: "0 auto", padding: "0 36px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 290px" }}>
+            <div
+              style={{
+                padding: "40px 36px 40px 0",
+                borderRight: `1px solid ${T.border}`,
+              }}
+            >
               <div
-                key={s2.label}
-                style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+                style={{
+                  fontFamily: T.mono,
+                  fontSize: "10px",
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: T.acc,
+                  marginBottom: "18px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
               >
                 <span
                   style={{
-                    fontSize: "24px",
-                    fontWeight: 700,
-                    color: s2.color,
-                    fontFamily: T.mono,
+                    display: "block",
+                    width: "20px",
+                    height: "1px",
+                    background: T.acc,
+                    flexShrink: 0,
                   }}
-                >
-                  {s2.val}
-                </span>
+                />
+                featured · {getDomainLabel(copy, featuredDomain).toLowerCase()}
+              </div>
+
+              <h1
+                style={{
+                  fontFamily: T.serif,
+                  fontSize: "clamp(28px, 3vw, 48px)",
+                  fontWeight: 400,
+                  color: T.textBright,
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.02em",
+                  margin: "0 0 14px",
+                }}
+              >
+                {featured?.title || copy.title}
+              </h1>
+
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: T.text,
+                  lineHeight: 1.8,
+                  maxWidth: "1600px",
+                  marginBottom: "22px",
+                }}
+              >
+                {featured?.shortDescription || copy.description}
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  flexWrap: "wrap",
+                }}
+              >
                 <span
                   style={{
+                    fontFamily: T.mono,
                     fontSize: "10px",
-                    color: T.textMuted,
-                    letterSpacing: "0.12em",
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    color: featuredTeamMeta.color,
+                    padding: "2px 7px",
+                    border: `1px solid ${featuredTeamMeta.border}`,
+                    background: featuredTeamMeta.dim,
+                    borderRadius: "2px",
                   }}
                 >
-                  {s2.label.toUpperCase()}
+                  {featuredTeamMeta.label}
                 </span>
+
+                <span style={{ fontSize: "11px", color: T.textMuted }}>
+                  {getDomainLabel(copy, featuredDomain)}
+                </span>
+
+                {featured?.readingTime && (
+                  <>
+                    <span style={{ color: T.textDim }}>·</span>
+                    <span style={{ fontSize: "11px", color: T.textMuted }}>
+                      {featured.readingTime} min
+                    </span>
+                  </>
+                )}
+
+                <button
+                  onClick={() => featured && onGoDoc(featured.id)}
+                  style={{
+                    marginLeft: "auto",
+                    fontFamily: T.mono,
+                    fontSize: "11px",
+                    letterSpacing: "0.06em",
+                    color: T.bg,
+                    background: T.acc,
+                    border: "none",
+                    padding: "8px 16px",
+                    cursor: "pointer",
+                    borderRadius: "2px",
+                  }}
+                >
+                  {isPl ? "czytaj artykuł →" : "read article →"}
+                </button>
               </div>
-            ))}
+            </div>
+
+            <div style={{ padding: "28px 0 28px 26px" }}>
+              <div
+                style={{
+                  fontFamily: T.mono,
+                  fontSize: "9px",
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: T.textMuted,
+                  paddingBottom: "10px",
+                  borderBottom: `1px solid ${T.border}`,
+                }}
+              >
+                {copy.recentlyUpdated}
+              </div>
+
+              {recentDocs.map((doc) => (
+                <RecentItem key={doc.id} doc={doc} copy={copy} onGoDoc={onGoDoc} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style={{ borderBottom: `1px solid ${T.border}` }}>
+        <div
+          style={{
+            maxWidth: "1600px",
+            margin: "0 auto",
+            padding: "0 36px",
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+          }}
+        >
+          {paths.map((p, i) => (
+            <PathCard key={p.num} {...p} isLast={i === paths.length - 1} />
+          ))}
+        </div>
+      </section>
+
+      <div style={{ borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ maxWidth: "1600px", margin: "0 auto", padding: "0 36px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              paddingTop: "14px",
+              borderBottom: `1px solid ${T.bgCard}`,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: T.mono,
+                fontSize: "9px",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: T.textMuted,
+                marginRight: "16px",
+                paddingBottom: "14px",
+              }}
+            >
+              {copy.team}
+            </span>
+
+            <div style={{ display: "flex" }}>
+              {teamFilters.map((f) => (
+                <TeamTab
+                  key={f.key}
+                  f={f}
+                  active={teamFilter === f.key}
+                  onClick={() => setTeamFilter(f.key)}
+                />
+              ))}
+            </div>
+
+            <span
+              style={{
+                marginLeft: "auto",
+                paddingBottom: "14px",
+                fontFamily: T.mono,
+                fontSize: "10px",
+                color: T.textMuted,
+              }}
+            >
+              {visible.length} {visible.length === 1 ? copy.result : copy.results}
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              paddingTop: "10px",
+              paddingBottom: "14px",
+              overflowX: "auto",
+              gap: "0",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: T.mono,
+                fontSize: "9px",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: T.textMuted,
+                marginRight: "14px",
+                flexShrink: 0,
+              }}
+            >
+              {copy.domain}
+            </span>
+
+            <DomainChip
+              label={copy.allDomains}
+              count={feedDocs.length}
+              active={domainFilter === "all"}
+              accent={T.acc}
+              onClick={() => setDomainFilter("all")}
+            />
+
+            {domainGroups.map(([domain, items]) => {
+              const normalizedDomain = normalizeDomainKey(domain);
+
+              return (
+                <DomainChip
+                  key={normalizedDomain}
+                  label={getDomainLabel(copy, normalizedDomain)}
+                  count={items.length}
+                  active={domainFilter === normalizedDomain}
+                  accent={getAccentByDomain(normalizedDomain)}
+                  onClick={() =>
+                    setDomainFilter(
+                      domainFilter === normalizedDomain ? "all" : normalizedDomain
+                    )
+                  }
+                />
+              );
+            })}
           </div>
         </div>
       </div>
 
-      <div
+      <section
         style={{
-          padding: "16px 36px",
-          borderBottom: `1px solid ${T.border}`,
-          display: "flex",
-          gap: "8px",
-          flexWrap: "wrap",
-          maxWidth: "1180px",
+          maxWidth: "1600px",
           margin: "0 auto",
+          padding: "40px 56px 100px",
         }}
       >
-        {filters.map((f) => {
-          const active = filter === f.key;
-          const accent = f.key === "red" ? T.red : f.key === "blue" ? T.blue : T.gen;
-
-          return (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "6px",
-                fontSize: "10px",
-                letterSpacing: "0.1em",
-                fontFamily: T.mono,
-                cursor: "pointer",
-                fontWeight: 600,
-                transition: "all 0.12s",
-                border: `1px solid ${
-                  active
-                    ? f.key === "red"
-                      ? T.redBorder
-                      : f.key === "blue"
-                        ? T.blueBorder
-                        : T.borderHover
-                    : T.border
-                }`,
-                background: active
-                  ? f.key === "red"
-                    ? T.redDim
-                    : f.key === "blue"
-                      ? T.blueDim
-                      : "rgba(255,255,255,0.04)"
-                  : "transparent",
-                color: active
-                  ? ["red", "blue"].includes(f.key)
-                    ? accent
-                    : T.textBright
-                  : T.textMuted,
-              }}
-            >
-              {f.label}
-            </button>
-          );
-        })}
-
-        <span
+        <div
           style={{
-            marginLeft: "auto",
-            fontSize: "11px",
-            color: T.textMuted,
             display: "flex",
-            alignItems: "center",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            marginBottom: "16px",
           }}
         >
-          {visible.length} result{visible.length !== 1 ? "s" : ""}
-        </span>
-      </div>
+          <div>
+            <div
+              style={{
+                fontFamily: T.mono,
+                fontSize: "9px",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: T.textMuted,
+                marginBottom: "5px",
+              }}
+            >
+              {copy.currentFeed}
+            </div>
+            <h2
+              style={{
+                fontFamily: T.mono,
+                fontSize: "18px",
+                color: T.textBright,
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                margin: 0,
+              }}
+            >
+              {activeLabel}
+            </h2>
+          </div>
 
-      <div style={{ padding: "30px 36px 52px", maxWidth: "1180px", margin: "0 auto" }}>
+          {(domainFilter !== "all" || teamFilter !== "all") && (
+            <button
+              onClick={() => {
+                setDomainFilter("all");
+                setTeamFilter("all");
+              }}
+              style={{
+                fontFamily: T.mono,
+                fontSize: "10px",
+                letterSpacing: "0.06em",
+                color: T.textMuted,
+                border: `1px solid ${T.border}`,
+                background: "transparent",
+                padding: "6px 12px",
+                borderRadius: "2px",
+                cursor: "pointer",
+              }}
+            >
+              {copy.resetFilters} ×
+            </button>
+          )}
+        </div>
+
         {visible.length === 0 ? (
           <div
             style={{
               color: T.textMuted,
               fontSize: "13px",
-              padding: "48px 0",
+              padding: "60px 0",
               textAlign: "center",
+              border: `1px dashed ${T.border}`,
+              borderRadius: "4px",
             }}
           >
-            <span style={{ color: T.gen }}>$</span> find . -name "*.md"{" "}
-            <span style={{ color: T.red }}>→ 0 results</span>
+            <div style={{ marginBottom: "10px" }}>
+              <span style={{ color: T.acc }}>$</span> {copy.noResultsCommand}
+              <span style={{ color: T.red }}> → {copy.noResults}</span>
+            </div>
+            <button
+              onClick={() => {
+                setDomainFilter("all");
+                setTeamFilter("all");
+              }}
+              style={{
+                fontFamily: T.mono,
+                fontSize: "10px",
+                letterSpacing: "0.06em",
+                color: T.acc,
+                border: `1px solid ${T.accBorder}`,
+                background: T.accDim,
+                padding: "8px 14px",
+                cursor: "pointer",
+                borderRadius: "2px",
+                marginTop: "12px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              {copy.showEverything} <ArrowRight size={12} />
+            </button>
           </div>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "18px",
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column" }}>
             {visible.map((doc) => (
               <ArticleCard key={doc.id} doc={doc} onGoDoc={onGoDoc} />
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

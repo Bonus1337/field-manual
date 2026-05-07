@@ -4,7 +4,6 @@ import { T } from "../constants/theme";
 
 export function CodeBlock({ code, language, wrap = false }) {
   const [copied, setCopied] = useState(false);
-
   const value = String(code || "").trim();
 
   const onCopy = async () => {
@@ -13,7 +12,7 @@ export function CodeBlock({ code, language, wrap = false }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
-      /* empty */
+      //ignore
     }
   };
 
@@ -21,7 +20,7 @@ export function CodeBlock({ code, language, wrap = false }) {
     <div
       style={{
         margin: "20px 0",
-        borderRadius: "6px",
+        borderRadius: "3px",
         border: `1px solid ${T.border}`,
         background: "#030507",
         overflow: "hidden",
@@ -36,7 +35,7 @@ export function CodeBlock({ code, language, wrap = false }) {
           alignItems: "center",
           justifyContent: "space-between",
           gap: "12px",
-          padding: "8px 14px",
+          padding: "7px 14px",
           borderBottom: `1px solid ${T.border}`,
           background: T.bgCard,
           minWidth: 0,
@@ -53,7 +52,6 @@ export function CodeBlock({ code, language, wrap = false }) {
           <span style={{ color: "#ff5f57", fontSize: "9px", flexShrink: 0 }}>●</span>
           <span style={{ color: "#febc2e", fontSize: "9px", flexShrink: 0 }}>●</span>
           <span style={{ color: "#28c840", fontSize: "9px", flexShrink: 0 }}>●</span>
-
           <span
             style={{
               color: T.textMuted,
@@ -75,18 +73,22 @@ export function CodeBlock({ code, language, wrap = false }) {
             alignItems: "center",
             gap: "5px",
             padding: "3px 9px",
-            borderRadius: "4px",
             border: `1px solid ${T.border}`,
+            borderRadius: "2px",
             background: "transparent",
-            color: T.textMuted,
+            color: copied ? T.acc : T.textMuted,
             fontFamily: T.mono,
             fontSize: "11px",
             cursor: "pointer",
-            transition: "color 0.1s",
             flexShrink: 0,
+            transition: "color 0.1s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = T.textBright)}
-          onMouseLeave={(e) => (e.currentTarget.style.color = T.textMuted)}
+          onMouseEnter={(e) => {
+            if (!copied) e.currentTarget.style.color = T.textBright;
+          }}
+          onMouseLeave={(e) => {
+            if (!copied) e.currentTarget.style.color = T.textMuted;
+          }}
         >
           {copied ? <Check size={11} /> : <Copy size={11} />}
           {copied ? "copied" : "copy"}
@@ -101,7 +103,6 @@ export function CodeBlock({ code, language, wrap = false }) {
           lineHeight: "1.75",
           maxWidth: "100%",
           minWidth: 0,
-
           overflowX: wrap ? "hidden" : "auto",
           whiteSpace: wrap ? "pre-wrap" : "pre",
           overflowWrap: wrap ? "anywhere" : "normal",
@@ -112,7 +113,7 @@ export function CodeBlock({ code, language, wrap = false }) {
           style={{
             display: "block",
             fontFamily: T.mono,
-            color: T.cyan,
+            color: T.acc,
             whiteSpace: "inherit",
             overflowWrap: "inherit",
             wordBreak: "inherit",

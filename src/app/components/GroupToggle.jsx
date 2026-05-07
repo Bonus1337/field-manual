@@ -1,42 +1,55 @@
-import React from "react";
+import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { T } from "../constants/theme";
 
 export function GroupToggle({ label, count, isOpen, onToggle, indentLevel = 0 }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <button
       onClick={onToggle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         width: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: `6px ${8 + indentLevel * 8}px`,
-        background: "none",
+        padding: `5px ${8 + indentLevel * 8}px 5px ${10 + indentLevel * 8}px`,
+        background: hovered ? "rgba(255,255,255,0.02)" : "none",
         border: "none",
+        borderRadius: "2px",
         cursor: "pointer",
         fontFamily: T.mono,
+        transition: "background 0.1s",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          minWidth: 0,
+        }}
+      >
         <ChevronRight
-          size={12}
+          size={10}
           style={{
-            color: T.textMuted,
-            transition: "transform 0.15s",
+            color: isOpen ? T.acc : T.textMuted,
             transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 0.15s, color 0.12s",
             flexShrink: 0,
           }}
         />
         <span
           style={{
             fontSize: "11px",
-            color: isOpen ? T.text : T.textMuted,
+            color: isOpen ? T.text : hovered ? T.text : T.textMuted,
             fontWeight: isOpen ? 500 : 400,
-            transition: "color 0.12s",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            transition: "color 0.12s",
           }}
         >
           {label}
@@ -45,10 +58,12 @@ export function GroupToggle({ label, count, isOpen, onToggle, indentLevel = 0 })
 
       <span
         style={{
-          fontSize: "10px",
-          color: T.textMuted,
+          fontFamily: T.mono,
+          fontSize: "9px",
+          color: isOpen ? T.textMuted : T.textDim,
           flexShrink: 0,
           marginLeft: "6px",
+          transition: "color 0.12s",
         }}
       >
         {count}

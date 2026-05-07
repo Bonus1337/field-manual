@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Fuse from "fuse.js";
-import { Menu, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 
 import { T } from "./constants/theme";
 import { SITE, UI, PINNED_ORDER, PINNED_SET } from "./constants/config";
@@ -17,7 +17,6 @@ import {
 import { buildToc } from "./toc";
 import { loadContentBilingual } from "./contentLoader";
 import { exportAsPDF, exportAsMD } from "./utils/exportDoc";
-
 import {
   Markdown,
   HomeView,
@@ -26,10 +25,40 @@ import {
   TableOfContents,
 } from "./components/index";
 
+function getDiffColor(d) {
+  const v = String(d || "").toLowerCase();
+  if (v === "easy" || v === "apprentice") return T.acc;
+  if (v === "medium" || v === "practitioner") return T.amber;
+  if (v === "hard" || v === "expert") return T.red;
+  return T.textMuted;
+}
+
+function getDomainLabel(navRoot, domainLabels) {
+  if (!navRoot || !domainLabels) return null;
+
+  if (domainLabels[navRoot]) return domainLabels[navRoot];
+
+  const rootSlug = String(navRoot)
+    .replace(/^\d+[-_]/, "")
+    .toLowerCase();
+  for (const [key, label] of Object.entries(domainLabels)) {
+    const keySlug = String(key)
+      .replace(/^\d+[-_]/, "")
+      .toLowerCase();
+    if (keySlug === rootSlug) return label;
+  }
+
+  return null;
+}
+
+function navRootOrder(navRoot) {
+  const m = String(navRoot || "").match(/^(\d+)/);
+  return m ? Number(m[1]) : 999;
+}
+
 export default function SecurityGuidebook() {
   const { lang, id } = useParams();
   const navigate = useNavigate();
-
   const mainRef = useRef(null);
   const articleRef = useRef(null);
 
@@ -44,7 +73,6 @@ export default function SecurityGuidebook() {
   useEffect(() => {
     const fid = "jb-mono-font";
     if (document.getElementById(fid)) return;
-
     const lk = document.createElement("link");
     lk.id = fid;
     lk.rel = "stylesheet";
@@ -89,14 +117,12 @@ export default function SecurityGuidebook() {
           el.focus();
         }
       }
-
       if (e.key === "Escape") {
         const el = document.getElementById("kb-search");
         if (el && document.activeElement === el) el.blur();
         if (!isDesktop && sidebarOpenEffective) setSidebarOpen(false);
       }
     };
-
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isDesktop, sidebarOpenEffective]);
@@ -118,15 +144,12 @@ export default function SecurityGuidebook() {
   const isFallback = pair ? !pair[safeLang] : false;
 
   useEffect(() => {
-    if (!id && canon?.length) {
-      navigate(`/${safeLang}/doc/home`, { replace: true });
-    }
+    if (!id && canon?.length) navigate(`/${safeLang}/doc/home`, { replace: true });
   }, [id, canon, navigate, safeLang]);
 
   useEffect(() => {
-    if (id && id !== "home" && !doc && canon?.length) {
+    if (id && id !== "home" && !doc && canon?.length)
       navigate(`/${safeLang}/doc/home`, { replace: true });
-    }
   }, [doc, canon, safeLang, navigate, id]);
 
   const fuse = useMemo(
@@ -147,6 +170,7 @@ export default function SecurityGuidebook() {
     const secMap = new Map();
     const path = new Map();
     const pinnedDocs = [];
+    const domainLabels = UI[safeLang]?.homeView?.domainLabels || {};
 
     const ensureSection = (secKey, payload) => {
       if (!secMap.has(secKey)) {
@@ -154,6 +178,7 @@ export default function SecurityGuidebook() {
           key: secKey,
           team: payload.team,
           sectionLabel: payload.sectionLabel,
+          navRoot: payload.navRoot, // ← przechowujemy dla sortowania
           platform: "other",
           subs: new Map(),
           groups: new Map(),
@@ -166,7 +191,6 @@ export default function SecurityGuidebook() {
     const ensureSub = (sec, subLabel) => {
       const subKey = subLabel || "__root__";
       const groupKey = `${sec.key}::sub::${subKey}`;
-
       if (!sec.subs.has(subKey)) {
         sec.subs.set(subKey, {
           key: groupKey,
@@ -176,7 +200,6 @@ export default function SecurityGuidebook() {
           countOverride: null,
         });
       }
-
       return sec.subs.get(subKey);
     };
 
@@ -193,29 +216,33 @@ export default function SecurityGuidebook() {
 
       let sectionLabel = d.category || "General";
       let subLabel = "";
+      let navRoot = nav?.root || "";
 
       if (isPS) {
         sectionLabel = "PortSwigger";
         subLabel = isWU ? "Writeups" : "Knowledge base";
+        navRoot = "portswigger";
       } else if (isTHM) {
         sectionLabel = "TryHackMe";
         subLabel = isWU ? "Writeups" : "Rooms";
+        navRoot = "tryhackme";
       } else if (nav?.root && nav.root !== "general") {
-        sectionLabel = titleize(nav.root);
+        sectionLabel = getDomainLabel(nav.root, domainLabels) || titleize(nav.root);
         subLabel = d.category || "";
+        navRoot = nav.root;
       } else {
         sectionLabel = d.category || "General";
         subLabel = "";
+        navRoot = "general";
       }
 
-      const secKey = `${d.team}::${sectionLabel}`;
-      const sec = ensureSection(secKey, { team: d.team, sectionLabel });
+      const secKey = navRoot;
+      const sec = ensureSection(secKey, { team: d.team, sectionLabel, navRoot });
 
       if (isPS && isWU) {
         sec.platform = "portswigger";
         const sub = ensureSub(sec, "Writeups");
         sub.kind = "portswigger-writeups";
-
         if (!sec.writeups) sec.writeups = { topics: new Map() };
 
         const topicRaw = (d.chapter || d.nav?.topic || d.category || "misc").trim();
@@ -245,14 +272,12 @@ export default function SecurityGuidebook() {
 
         topic.diffs.get(diffKey).items.push(d);
         sub.countOverride = (sub.countOverride ?? 0) + 1;
-
         path.set(d.id, {
           secKey,
           subKey: sub.key,
           parentKey: topicKey,
           groupKey: diffGroupKey,
         });
-
         continue;
       }
 
@@ -260,7 +285,6 @@ export default function SecurityGuidebook() {
         sec.platform = "tryhackme";
         const diffKey = normalizeDifficulty(d.difficulty);
         const groupKey = `${secKey}::diff::${diffKey}`;
-
         if (!sec.groups.has(diffKey)) {
           sec.groups.set(diffKey, {
             key: groupKey,
@@ -269,7 +293,6 @@ export default function SecurityGuidebook() {
             items: [],
           });
         }
-
         sec.groups.get(diffKey).items.push(d);
         path.set(d.id, { secKey, groupKey });
         continue;
@@ -280,28 +303,25 @@ export default function SecurityGuidebook() {
       path.set(d.id, { secKey, groupKey: sub.key });
     }
 
-    const order = { neutral: 0, blue: 1, red: 2 };
-
     const out = Array.from(secMap.values()).sort((a, b) => {
-      const t2 = (order[a.team] ?? 9) - (order[b.team] ?? 9);
-      return t2 !== 0 ? t2 : a.sectionLabel.localeCompare(b.sectionLabel);
+      const na = navRootOrder(a.navRoot);
+      const nb = navRootOrder(b.navRoot);
+      if (na !== nb) return na - nb;
+      return a.sectionLabel.localeCompare(b.sectionLabel);
     });
 
     for (const sec of out) {
       const subsArr = Array.from(sec.subs.values()).sort((a, b) =>
         (a.label || "").localeCompare(b.label || "")
       );
-
       for (const sub of subsArr) {
         if (sub.kind === "docs") sub.items.sort(sortDocsByDateAscThenTitle);
       }
-
       sec.subsArr = subsArr;
 
       const groupsArr = Array.from(sec.groups.values()).sort((a, b) =>
         sortByDifficulty(sec.platform, a.raw, b.raw)
       );
-
       for (const g of groupsArr) g.items.sort(sortDocsByDateAscThenTitle);
       sec.groupsArr = groupsArr;
 
@@ -309,16 +329,13 @@ export default function SecurityGuidebook() {
         const topicsArr = Array.from(sec.writeups.topics.values()).sort((a, b) =>
           (a.label || "").localeCompare(b.label || "")
         );
-
         for (const topic of topicsArr) {
           const diffsArr = Array.from(topic.diffs.values()).sort((a, b) =>
             sortByDifficulty("portswigger", a.raw, b.raw)
           );
-
           for (const g of diffsArr) g.items.sort(sortDocsByDateAscThenTitle);
           topic.diffsArr = diffsArr;
         }
-
         sec.writeups.topicsArr = topicsArr;
       }
     }
@@ -330,21 +347,18 @@ export default function SecurityGuidebook() {
     );
 
     return { sectionsList: out, pathByDocId: path, pinned: pinnedDocs };
-  }, [filtered]);
+  }, [filtered, safeLang]);
 
   const activePath = doc?.id ? pathByDocId.get(doc.id) || null : null;
 
   useEffect(() => {
     if (!activePath?.secKey) return;
-
     const raf = requestAnimationFrame(() => {
       setOpenSections((prev) =>
         activePath.secKey in prev ? prev : { ...prev, [activePath.secKey]: true }
       );
-
       setOpenGroups((prev) => {
         let next = prev;
-
         for (const k of [
           activePath.subKey,
           activePath.parentKey,
@@ -355,11 +369,9 @@ export default function SecurityGuidebook() {
             next[k] = true;
           }
         }
-
         return next;
       });
     });
-
     return () => cancelAnimationFrame(raf);
   }, [
     activePath?.secKey,
@@ -372,12 +384,10 @@ export default function SecurityGuidebook() {
     () => [...canon].sort(sortDocsByDateAscThenTitle),
     [canon]
   );
-
   const docIndex = useMemo(
     () => canonSortedByDate.findIndex((d) => d.id === (doc?.id ?? "")),
     [canonSortedByDate, doc]
   );
-
   const prevDoc = docIndex > 0 ? canonSortedByDate[docIndex - 1] : null;
   const nextDoc =
     docIndex >= 0 && docIndex < canonSortedByDate.length - 1
@@ -394,50 +404,40 @@ export default function SecurityGuidebook() {
   const onGoDoc = useCallback(
     (docId2) => {
       navigate(`/${safeLang}/doc/${docId2}`);
-
-      if (mainRef.current) {
-        mainRef.current.scrollTo({ top: 0, behavior: "auto" });
-      }
-
+      if (mainRef.current) mainRef.current.scrollTo({ top: 0, behavior: "auto" });
       if (!isDesktop) setSidebarOpen(false);
     },
     [navigate, safeLang, isDesktop]
   );
 
-  const toggleSection = useCallback((k) => {
-    setOpenSections((p) => ({ ...p, [k]: !p[k] }));
-  }, []);
-
-  const toggleGroup = useCallback((k) => {
-    setOpenGroups((p) => ({ ...p, [k]: !p[k] }));
-  }, []);
+  const toggleSection = useCallback(
+    (k) => setOpenSections((p) => ({ ...p, [k]: !p[k] })),
+    []
+  );
+  const toggleGroup = useCallback(
+    (k) => setOpenGroups((p) => ({ ...p, [k]: !p[k] })),
+    []
+  );
 
   const handleExportPdf = useCallback(() => {
-    if (!doc) return;
-    exportAsPDF(doc, articleRef);
+    if (doc) exportAsPDF(doc, articleRef);
   }, [doc]);
-
   const handleExportMd = useCallback(() => {
-    if (!doc) return;
-    exportAsMD(doc);
+    if (doc) exportAsMD(doc);
   }, [doc]);
 
   const editUrl = doc ? `${SITE.repoUrl}/blob/main/${doc.sourcePath}` : SITE.repoUrl;
 
   useEffect(() => {
     if (!doc || isHome) return;
-
     const raf = requestAnimationFrame(() => {
       const article = articleRef.current;
-
       if (!article) {
         setTocItems([]);
         setActiveTocId(null);
         return;
       }
-
       const headings = Array.from(article.querySelectorAll("h1,h2,h3,h4"));
-
       if (!headings.length) {
         try {
           setTocItems(buildToc(doc.content) || []);
@@ -447,7 +447,6 @@ export default function SecurityGuidebook() {
         setActiveTocId(null);
         return;
       }
-
       const items = headings
         .map((el) => {
           const text = (el.textContent || "").trim();
@@ -455,19 +454,16 @@ export default function SecurityGuidebook() {
           return text && hid ? { id: hid, text } : null;
         })
         .filter(Boolean);
-
       setTocItems(items);
       setActiveTocId(items[0]?.id ?? null);
     });
-
     return () => cancelAnimationFrame(raf);
-  }, [doc?.id, doc?.content, isHome]);
+  }, [doc, isHome]);
 
   useEffect(() => {
     const root = mainRef.current;
     const article = articleRef.current;
     if (!root || !article || !tocItems.length) return;
-
     const onScroll = () => {
       const targets = tocItems
         .map((tci) => ({
@@ -475,22 +471,16 @@ export default function SecurityGuidebook() {
           el: article.querySelector(`#${CSS.escape(tci.id)}`),
         }))
         .filter((t) => t.el);
-
       if (!targets.length) return;
-
       const threshold = root.getBoundingClientRect().top + 100;
       let active = targets[0].id;
-
       for (const { id: tid, el } of targets) {
         if (el.getBoundingClientRect().top <= threshold) active = tid;
       }
-
       setActiveTocId(active);
     };
-
     root.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-
     return () => root.removeEventListener("scroll", onScroll);
   }, [tocItems, doc?.id]);
 
@@ -498,16 +488,13 @@ export default function SecurityGuidebook() {
     const root = mainRef.current;
     const article = articleRef.current;
     if (!root || !article) return;
-
     const el = article.querySelector(`#${CSS.escape(hid)}`);
     if (!el) return;
-
     const top =
       el.getBoundingClientRect().top -
       root.getBoundingClientRect().top +
       root.scrollTop -
       96;
-
     root.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   }, []);
 
@@ -526,6 +513,7 @@ export default function SecurityGuidebook() {
         isDesktop={isDesktop}
         sidebarOpen={sidebarOpenEffective}
         onCloseSidebar={() => setSidebarOpen(false)}
+        onOpenSidebar={() => setSidebarOpen(true)}
         query={query}
         onQueryChange={setQuery}
         t={t}
@@ -568,56 +556,41 @@ export default function SecurityGuidebook() {
         {isHome && !isDesktop && (
           <div
             style={{
-              padding: "12px 16px",
+              padding: "11px 16px",
               borderBottom: `1px solid ${T.border}`,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              justifyContent: "center",
             }}
           >
-            <button
-              onClick={() => setSidebarOpen(true)}
-              style={{
-                background: T.bgCard,
-                border: `1px solid ${T.border}`,
-                borderRadius: "4px",
-                padding: "6px 8px",
-                cursor: "pointer",
-                color: T.textMuted,
-                display: "flex",
-              }}
-            >
-              <Menu size={16} />
-            </button>
-
-            <span style={{ fontSize: "13px", color: T.textMuted, fontFamily: T.mono }}>
-              field-manual
+            <span style={{ fontFamily: T.mono, fontSize: "12px", color: T.textMuted }}>
+              field<span style={{ color: T.acc }}>/</span>manual
             </span>
           </div>
         )}
 
-        {isHome ? (
-          <HomeView docs={sidebarItems} onGoDoc={onGoDoc} />
-        ) : doc ? (
+        {isHome && <HomeView docs={sidebarItems} onGoDoc={onGoDoc} safeLang={safeLang} />}
+
+        {!isHome && doc && (
           <div
             style={{
-              maxWidth: "1100px",
+              maxWidth: "1120px",
               margin: "0 auto",
-              padding: "32px 24px 48px",
+              padding: "36px 28px 64px",
               display: "grid",
-              gridTemplateColumns: isDesktop ? "1fr 240px" : "1fr",
-              gap: "40px",
+              gridTemplateColumns: isDesktop ? "1fr 220px" : "1fr",
+              gap: "48px",
             }}
           >
             <article ref={articleRef} style={{ minWidth: 0 }}>
               {isFallback && (
                 <div
                   style={{
-                    marginBottom: "20px",
-                    padding: "10px 16px",
-                    background: "rgba(245,158,11,0.07)",
-                    border: `1px solid rgba(245,158,11,0.25)`,
-                    borderRadius: "5px",
+                    marginBottom: "24px",
+                    padding: "10px 14px",
+                    background: "rgba(245,158,11,0.06)",
+                    border: `1px solid ${T.amberBorder}`,
+                    borderRadius: "3px",
                     fontSize: "12px",
                     color: T.amber,
                     fontFamily: T.mono,
@@ -627,80 +600,95 @@ export default function SecurityGuidebook() {
                 </div>
               )}
 
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  gap: "6px",
-                  marginBottom: "24px",
-                }}
-              >
-                {doc.updatedAt && (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      fontSize: "11px",
-                      color: T.textMuted,
-                      background: T.bgCard,
-                      border: `1px solid ${T.border}`,
-                      borderRadius: "4px",
-                      padding: "3px 8px",
-                    }}
-                  >
-                    <Clock size={10} /> {t.updated}: {doc.updatedAt}
-                  </span>
-                )}
+              {(doc.updatedAt || doc.difficulty || doc.tags?.length) && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    flexWrap: "wrap",
+                    marginBottom: "28px",
+                    paddingBottom: "20px",
+                    borderBottom: `1px solid ${T.border}`,
+                  }}
+                >
+                  {doc.updatedAt && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        fontFamily: T.mono,
+                        fontSize: "10px",
+                        color: T.textMuted,
+                        padding: "3px 8px",
+                        border: `1px solid ${T.border}`,
+                        borderRadius: "2px",
+                        background: T.bgCard,
+                      }}
+                    >
+                      <Clock size={10} />
+                      {t.updated}: {doc.updatedAt}
+                    </span>
+                  )}
 
-                {doc.difficulty && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: T.textMuted,
-                      background: T.bgCard,
-                      border: `1px solid ${T.border}`,
-                      borderRadius: "4px",
-                      padding: "3px 8px",
-                    }}
-                  >
-                    {t.difficulty}: {doc.difficulty}
-                  </span>
-                )}
+                  {doc.difficulty && (
+                    <span
+                      style={{
+                        fontFamily: T.mono,
+                        fontSize: "10px",
+                        letterSpacing: "0.06em",
+                        color: getDiffColor(doc.difficulty),
+                        padding: "3px 8px",
+                        border: `1px solid ${getDiffColor(doc.difficulty)}30`,
+                        borderRadius: "2px",
+                        background: `${getDiffColor(doc.difficulty)}08`,
+                      }}
+                    >
+                      {doc.difficulty}
+                    </span>
+                  )}
 
-                {doc.tags?.length ? (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: T.textMuted,
-                      background: T.bgCard,
-                      border: `1px solid ${T.border}`,
-                      borderRadius: "4px",
-                      padding: "3px 8px",
-                    }}
-                  >
-                    {doc.tags.join(" · ")}
-                  </span>
-                ) : null}
-              </div>
+                  {doc.tags?.length > 0 && (
+                    <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
+                      {doc.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          style={{
+                            fontFamily: T.mono,
+                            fontSize: "10px",
+                            color: T.textMuted,
+                            padding: "3px 7px",
+                            border: `1px solid ${T.border}`,
+                            borderRadius: "2px",
+                            background: T.bgCard,
+                            letterSpacing: "0.02em",
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <Markdown content={doc.content} />
 
               <div
                 style={{
-                  marginTop: "48px",
+                  marginTop: "56px",
                   paddingTop: "20px",
                   borderTop: `1px solid ${T.border}`,
-                  display: "flex",
-                  justifyContent: "space-between",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
                   gap: "12px",
                 }}
               >
                 {[
-                  { doc: prevDoc, label: `← ${t.prev}`, align: "left" },
-                  { doc: nextDoc, label: `${t.next} →`, align: "right" },
-                ].map(({ doc: d, label, align }) => (
+                  { d: prevDoc, label: t.prev, isNext: false },
+                  { d: nextDoc, label: t.next, isNext: true },
+                ].map(({ d, label, isNext }) => (
                   <button
                     key={label}
                     disabled={!d}
@@ -708,35 +696,43 @@ export default function SecurityGuidebook() {
                     style={{
                       display: "flex",
                       flexDirection: "column",
-                      alignItems: align === "right" ? "flex-end" : "flex-start",
-                      gap: "3px",
-                      padding: "10px 14px",
-                      borderRadius: "5px",
+                      alignItems: isNext ? "flex-end" : "flex-start",
+                      gap: "4px",
+                      padding: "14px 16px",
                       border: `1px solid ${T.border}`,
-                      background: d ? "transparent" : "none",
+                      borderRadius: "3px",
+                      background: "transparent",
                       cursor: d ? "pointer" : "not-allowed",
-                      opacity: d ? 1 : 0.35,
+                      opacity: d ? 1 : 0.3,
                       fontFamily: T.mono,
-                      transition: "border-color 0.12s",
-                      maxWidth: "45%",
+                      textAlign: isNext ? "right" : "left",
+                      transition: "border-color 0.12s, background 0.12s",
                     }}
                     onMouseEnter={(e) => {
-                      if (d) e.currentTarget.style.borderColor = T.borderHover;
+                      if (!d) return;
+                      e.currentTarget.style.borderColor = T.accBorder;
+                      e.currentTarget.style.background = T.accDim;
                     }}
                     onMouseLeave={(e) => {
-                      if (d) e.currentTarget.style.borderColor = T.border;
+                      e.currentTarget.style.borderColor = T.border;
+                      e.currentTarget.style.background = "transparent";
                     }}
                   >
                     <span
                       style={{
-                        fontSize: "10px",
-                        color: T.textMuted,
-                        letterSpacing: "0.08em",
+                        fontSize: "9px",
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: T.textDim,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
                       }}
                     >
+                      {!isNext && <ChevronLeft size={10} />}
                       {label}
+                      {isNext && <ChevronRight size={10} />}
                     </span>
-
                     {d && (
                       <span
                         style={{
@@ -746,6 +742,7 @@ export default function SecurityGuidebook() {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                           maxWidth: "100%",
+                          display: "block",
                         }}
                       >
                         {d.title}
@@ -767,7 +764,7 @@ export default function SecurityGuidebook() {
               </aside>
             )}
           </div>
-        ) : null}
+        )}
       </main>
     </div>
   );

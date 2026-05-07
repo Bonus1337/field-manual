@@ -15,26 +15,28 @@ export function DocButton({ item, isActive, onGoDoc }) {
         textAlign: "left",
         display: "block",
         padding: "7px 10px",
-        borderRadius: "4px",
         cursor: "pointer",
+        fontFamily: T.mono,
+        outline: "none",
+        border: "none",
+        borderLeft: `2px solid ${isActive ? m.color : hov ? m.border : "transparent"}`,
+        borderRadius: "0 3px 3px 0",
+
         background: isActive
-          ? "rgba(255,255,255,0.04)"
+          ? `${m.color}0f`
           : hov
             ? "rgba(255,255,255,0.025)"
             : "transparent",
-        borderLeft: `2px solid ${isActive ? m.color : hov ? m.border : "transparent"}`,
-        border: "none",
-        outline: "none",
-        boxShadow: isActive
-          ? `inset 0 0 0 0 transparent, -2px 0 8px ${m.color}22`
-          : "none",
-        fontFamily: T.mono,
-        transition: "all 0.12s",
+
+        transition: "background 0.12s, border-color 0.12s",
       }}
     >
       <div
         style={{
-          color: isActive ? T.textBright : hov ? T.text : "#6b7e96",
+          display: "flex",
+          alignItems: "baseline",
+          gap: "5px",
+          color: isActive ? T.textBright : hov ? T.text : T.textMuted,
           fontSize: "12px",
           lineHeight: "1.35",
           marginBottom: item.tags?.length ? "4px" : 0,
@@ -42,23 +44,43 @@ export function DocButton({ item, isActive, onGoDoc }) {
         }}
       >
         {isActive && (
-          <span style={{ color: m.color, marginRight: "5px", fontSize: "10px" }}>›</span>
+          <span
+            style={{
+              color: m.color,
+              fontSize: "10px",
+              flexShrink: 0,
+            }}
+          >
+            ›
+          </span>
         )}
-        {item.title}
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {item.title}
+        </span>
       </div>
 
-      {item.tags?.length ? (
+      {item.tags?.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
           {item.tags.slice(0, 2).map((tag) => (
             <span
               key={tag}
-              style={{ fontSize: "9px", color: T.textMuted, letterSpacing: "0.04em" }}
+              style={{
+                fontSize: "9px",
+                color: T.textDim,
+                letterSpacing: "0.04em",
+              }}
             >
               {tag}
             </span>
           ))}
         </div>
-      ) : null}
+      )}
     </button>
   );
 }
