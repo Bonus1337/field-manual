@@ -1,9 +1,25 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Crosshair, Layers3, Radar, Shield, Terminal } from "lucide-react";
 import { T, ts, normalizeTeam, getAccentByDomain } from "../constants/theme";
 import { UI, PINNED_SET } from "../constants/config";
 import { sortByDateDesc } from "../utils/sorting";
 import { ArticleCard } from "./ArticleCard";
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const update = () => setIsMobile(mq.matches);
+
+    update();
+    mq.addEventListener("change", update);
+
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  return isMobile;
+}
 
 function normalizeDomainKey(value) {
   return String(value || "general")
@@ -22,7 +38,9 @@ function prettyLabel(value) {
     .replace(/-/g, " ")
     .replace(/_/g, " ")
     .trim();
+
   if (!raw) return "General";
+
   return raw
     .split(" ")
     .map((w) => {
@@ -42,7 +60,7 @@ function getDomainLabel(copy, domain) {
 }
 
 function getTeamVisual(key) {
-  if (key === "all")
+  if (key === "all") {
     return {
       key: "all",
       label: "All",
@@ -50,11 +68,14 @@ function getTeamVisual(key) {
       dim: T.accDim,
       border: T.accBorder,
     };
+  }
+
   return ts(key);
 }
 
 function getFeatured(docs) {
   const s = [...docs].sort(sortByDateDesc);
+
   return (
     s.find((d) => d.id === "network-infrastructure-security-introduction") ||
     s.find((d) => d.id === "web-pentest-understanding-the-app-not-magic-payloads") ||
@@ -74,6 +95,7 @@ function RecentItem({ doc, copy, onGoDoc }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
+        minWidth: 0,
         padding: "12px 0",
         borderBottom: `1px solid ${T.border}`,
         cursor: "pointer",
@@ -81,25 +103,33 @@ function RecentItem({ doc, copy, onGoDoc }) {
     >
       <div
         style={{
+          minWidth: 0,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: "12px",
           marginBottom: "4px",
         }}
       >
         <span
           style={{
+            minWidth: 0,
             fontFamily: T.mono,
             fontSize: "9px",
             letterSpacing: "0.10em",
             textTransform: "uppercase",
             color: T.textMuted,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {getDomainLabel(copy, domain)}
         </span>
+
         <span
           style={{
+            flexShrink: 0,
             fontFamily: T.mono,
             fontSize: "9px",
             fontWeight: 600,
@@ -112,11 +142,14 @@ function RecentItem({ doc, copy, onGoDoc }) {
 
       <div
         style={{
+          minWidth: 0,
           fontSize: "12px",
           fontWeight: 500,
           lineHeight: 1.45,
           color: hovered ? T.textBright : T.text,
           transition: "color 0.12s",
+          overflowWrap: "anywhere",
+          wordBreak: "break-word",
         }}
       >
         {doc.title}
@@ -131,7 +164,15 @@ function RecentItem({ doc, copy, onGoDoc }) {
   );
 }
 
-function PathCard({ num, heading, desc, cta, onClick, isLast = false }) {
+function PathCard({
+  num,
+  heading,
+  desc,
+  cta,
+  onClick,
+  isLast = false,
+  isMobile = false,
+}) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -140,17 +181,19 @@ function PathCard({ num, heading, desc, cta, onClick, isLast = false }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: "26px 28px",
+        minWidth: 0,
+        padding: isMobile ? "22px 0" : "26px 28px",
         cursor: "pointer",
         background: hovered ? T.bgCard : "transparent",
         transition: "background 0.12s",
-        borderRight: isLast ? "none" : `1px solid ${T.border}`,
+        borderRight: isMobile || isLast ? "none" : `1px solid ${T.border}`,
+        borderBottom: isMobile && !isLast ? `1px solid ${T.border}` : "none",
       }}
     >
       <div
         style={{
           fontFamily: T.mono,
-          fontSize: "36px",
+          fontSize: isMobile ? "34px" : "36px",
           fontWeight: 500,
           color: hovered ? T.border : T.textDim,
           lineHeight: 1,
@@ -167,6 +210,8 @@ function PathCard({ num, heading, desc, cta, onClick, isLast = false }) {
           fontWeight: 600,
           color: T.textBright,
           marginBottom: "6px",
+          overflowWrap: "anywhere",
+          wordBreak: "break-word",
         }}
       >
         {heading}
@@ -177,6 +222,8 @@ function PathCard({ num, heading, desc, cta, onClick, isLast = false }) {
           fontSize: "11px",
           color: T.textMuted,
           lineHeight: 1.65,
+          overflowWrap: "anywhere",
+          wordBreak: "break-word",
         }}
       >
         {desc}
@@ -209,6 +256,7 @@ function TeamTab({ f, active, onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
+        flexShrink: 0,
         fontFamily: T.mono,
         fontSize: "10px",
         letterSpacing: "0.04em",
@@ -222,6 +270,7 @@ function TeamTab({ f, active, onClick }) {
         display: "flex",
         alignItems: "center",
         gap: "6px",
+        whiteSpace: "nowrap",
       }}
     >
       {Icon && <Icon size={11} />}
@@ -244,9 +293,7 @@ function DomainChip({ label, count, active, accent, onClick }) {
         padding: "3px 10px",
         marginRight: "4px",
         flexShrink: 0,
-        border: `1px solid ${
-          active ? accent + "55" : hovered ? T.borderHover : T.border
-        }`,
+        border: `1px solid ${active ? accent + "55" : hovered ? T.borderHover : T.border}`,
         background: active ? accent + "12" : "transparent",
         color: active ? accent : hovered ? T.text : T.textMuted,
         cursor: "pointer",
@@ -255,6 +302,7 @@ function DomainChip({ label, count, active, accent, onClick }) {
         display: "inline-flex",
         alignItems: "center",
         gap: "6px",
+        whiteSpace: "nowrap",
       }}
     >
       {label}
@@ -264,6 +312,8 @@ function DomainChip({ label, count, active, accent, onClick }) {
 }
 
 export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
+  const isMobile = useIsMobile();
+
   const copy = UI?.[safeLang]?.homeView || UI.pl.homeView;
   const isPl = safeLang === "pl";
 
@@ -274,6 +324,7 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
   const sortedDocs = useMemo(() => [...nonPinned].sort(sortByDateDesc), [nonPinned]);
   const featured = useMemo(() => getFeatured(sortedDocs), [sortedDocs]);
   const feedDocs = useMemo(() => [...docs].sort(sortByDateDesc), [docs]);
+
   const recentDocs = useMemo(
     () => sortedDocs.filter((d) => d.id !== featured?.id).slice(0, 4),
     [sortedDocs, featured]
@@ -291,7 +342,9 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
     return Array.from(map.entries()).sort(([a], [b]) => {
       const na = String(a).match(/^(\d+)/)?.[1];
       const nb = String(b).match(/^(\d+)/)?.[1];
+
       if (na && nb) return Number(na) - Number(nb);
+
       return String(a).localeCompare(String(b));
     });
   }, [feedDocs]);
@@ -301,6 +354,7 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
       feedDocs.filter((doc) => {
         const tMatch = teamFilter === "all" || normalizeTeam(doc.team) === teamFilter;
         const dMatch = domainFilter === "all" || getDocDomain(doc) === domainFilter;
+
         return tMatch && dMatch;
       }),
     [feedDocs, teamFilter, domainFilter]
@@ -365,20 +419,25 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
         fontFamily: T.mono,
         minHeight: "100%",
         color: T.text,
+        minWidth: 0,
+        maxWidth: "100%",
+        overflowX: "hidden",
       }}
     >
       <div
         style={{
-          padding: "10px 36px",
+          padding: isMobile ? "10px 16px" : "10px 36px",
           borderBottom: `1px solid ${T.border}`,
           display: "flex",
           alignItems: "center",
           gap: "8px",
           fontSize: "11px",
           color: T.textMuted,
+          overflowX: "auto",
+          whiteSpace: "nowrap",
         }}
       >
-        <Terminal size={12} style={{ color: T.acc }} />
+        <Terminal size={12} style={{ color: T.acc, flexShrink: 0 }} />
         <span style={{ color: T.acc }}>$</span>
         <span>{copy.command}</span>
         <span style={{ color: T.border, margin: "0 6px" }}>·</span>
@@ -386,12 +445,25 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
       </div>
 
       <section style={{ borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ maxWidth: "1600px", margin: "0 auto", padding: "0 36px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 290px" }}>
+        <div
+          style={{
+            maxWidth: "1600px",
+            margin: "0 auto",
+            padding: isMobile ? "0 16px" : "0 36px",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "1fr 290px",
+            }}
+          >
             <div
               style={{
-                padding: "40px 36px 40px 0",
-                borderRight: `1px solid ${T.border}`,
+                minWidth: 0,
+                padding: isMobile ? "28px 0" : "40px 36px 40px 0",
+                borderRight: isMobile ? "none" : `1px solid ${T.border}`,
+                borderBottom: isMobile ? `1px solid ${T.border}` : "none",
               }}
             >
               <div
@@ -405,6 +477,8 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
+                  minWidth: 0,
+                  overflowWrap: "anywhere",
                 }}
               >
                 <span
@@ -422,12 +496,14 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
               <h1
                 style={{
                   fontFamily: T.serif,
-                  fontSize: "clamp(28px, 3vw, 48px)",
+                  fontSize: isMobile ? "30px" : "clamp(28px, 3vw, 48px)",
                   fontWeight: 400,
                   color: T.textBright,
                   lineHeight: 1.2,
                   letterSpacing: "-0.02em",
                   margin: "0 0 14px",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                 }}
               >
                 {featured?.title || copy.title}
@@ -440,6 +516,8 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
                   lineHeight: 1.8,
                   maxWidth: "1600px",
                   marginBottom: "22px",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                 }}
               >
                 {featured?.shortDescription || copy.description}
@@ -448,7 +526,7 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: isMobile ? "stretch" : "center",
                   gap: "10px",
                   flexWrap: "wrap",
                 }}
@@ -485,7 +563,9 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
                 <button
                   onClick={() => featured && onGoDoc(featured.id)}
                   style={{
-                    marginLeft: "auto",
+                    marginLeft: isMobile ? 0 : "auto",
+                    width: isMobile ? "100%" : "auto",
+                    marginTop: isMobile ? "8px" : 0,
                     fontFamily: T.mono,
                     fontSize: "11px",
                     letterSpacing: "0.06em",
@@ -502,7 +582,12 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
               </div>
             </div>
 
-            <div style={{ padding: "28px 0 28px 26px" }}>
+            <div
+              style={{
+                minWidth: 0,
+                padding: isMobile ? "22px 0" : "28px 0 28px 26px",
+              }}
+            >
               <div
                 style={{
                   fontFamily: T.mono,
@@ -530,23 +615,36 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
           style={{
             maxWidth: "1600px",
             margin: "0 auto",
-            padding: "0 36px",
+            padding: isMobile ? "0 16px" : "0 36px",
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
           }}
         >
           {paths.map((p, i) => (
-            <PathCard key={p.num} {...p} isLast={i === paths.length - 1} />
+            <PathCard
+              key={p.num}
+              {...p}
+              isMobile={isMobile}
+              isLast={i === paths.length - 1}
+            />
           ))}
         </div>
       </section>
 
       <div style={{ borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ maxWidth: "1600px", margin: "0 auto", padding: "0 36px" }}>
+        <div
+          style={{
+            maxWidth: "1600px",
+            margin: "0 auto",
+            padding: isMobile ? "0 16px" : "0 36px",
+          }}
+        >
           <div
             style={{
               display: "flex",
-              alignItems: "center",
+              alignItems: isMobile ? "flex-start" : "center",
+              flexDirection: isMobile ? "column" : "row",
+              gap: isMobile ? "10px" : "0",
               paddingTop: "14px",
               borderBottom: `1px solid ${T.bgCard}`,
             }}
@@ -558,14 +656,20 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
                 color: T.textMuted,
-                marginRight: "16px",
-                paddingBottom: "14px",
+                marginRight: isMobile ? 0 : "16px",
+                paddingBottom: isMobile ? 0 : "14px",
               }}
             >
               {copy.team}
             </span>
 
-            <div style={{ display: "flex" }}>
+            <div
+              style={{
+                display: "flex",
+                overflowX: "auto",
+                width: "100%",
+              }}
+            >
               {teamFilters.map((f) => (
                 <TeamTab
                   key={f.key}
@@ -578,7 +682,7 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
 
             <span
               style={{
-                marginLeft: "auto",
+                marginLeft: isMobile ? 0 : "auto",
                 paddingBottom: "14px",
                 fontFamily: T.mono,
                 fontSize: "10px",
@@ -647,18 +751,20 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
         style={{
           maxWidth: "1600px",
           margin: "0 auto",
-          padding: "40px 56px 100px",
+          padding: isMobile ? "28px 16px 80px" : "40px 56px 100px",
         }}
       >
         <div
           style={{
             display: "flex",
-            alignItems: "baseline",
+            alignItems: isMobile ? "flex-start" : "baseline",
             justifyContent: "space-between",
+            flexDirection: isMobile ? "column" : "row",
+            gap: isMobile ? "12px" : "0",
             marginBottom: "16px",
           }}
         >
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div
               style={{
                 fontFamily: T.mono,
@@ -671,6 +777,7 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
             >
               {copy.currentFeed}
             </div>
+
             <h2
               style={{
                 fontFamily: T.mono,
@@ -679,6 +786,8 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
                 fontWeight: 600,
                 letterSpacing: "-0.02em",
                 margin: 0,
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
               }}
             >
               {activeLabel}
@@ -713,16 +822,19 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
             style={{
               color: T.textMuted,
               fontSize: "13px",
-              padding: "60px 0",
+              padding: isMobile ? "42px 16px" : "60px 0",
               textAlign: "center",
               border: `1px dashed ${T.border}`,
               borderRadius: "4px",
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
             }}
           >
             <div style={{ marginBottom: "10px" }}>
               <span style={{ color: T.acc }}>$</span> {copy.noResultsCommand}
               <span style={{ color: T.red }}> → {copy.noResults}</span>
             </div>
+
             <button
               onClick={() => {
                 setDomainFilter("all");
@@ -748,7 +860,7 @@ export function HomeView({ docs, onGoDoc, safeLang = "pl" }) {
             </button>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             {visible.map((doc) => (
               <ArticleCard key={doc.id} doc={doc} onGoDoc={onGoDoc} />
             ))}

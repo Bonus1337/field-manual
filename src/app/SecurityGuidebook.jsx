@@ -681,8 +681,11 @@ export default function SecurityGuidebook() {
                   paddingTop: "20px",
                   borderTop: `1px solid ${T.border}`,
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: isDesktop ? "1fr 1fr" : "1fr",
                   gap: "12px",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  overflow: "hidden",
                 }}
               >
                 {[
@@ -694,18 +697,21 @@ export default function SecurityGuidebook() {
                     disabled={!d}
                     onClick={() => d && onGoDoc(d.id)}
                     style={{
+                      minWidth: 0,
+                      maxWidth: "100%",
+                      overflow: "hidden",
                       display: "flex",
                       flexDirection: "column",
-                      alignItems: isNext ? "flex-end" : "flex-start",
-                      gap: "4px",
-                      padding: "14px 16px",
+                      alignItems: isDesktop && isNext ? "flex-end" : "flex-start",
+                      gap: "6px",
+                      padding: isDesktop ? "14px 16px" : "16px",
                       border: `1px solid ${T.border}`,
                       borderRadius: "3px",
                       background: "transparent",
                       cursor: d ? "pointer" : "not-allowed",
                       opacity: d ? 1 : 0.3,
                       fontFamily: T.mono,
-                      textAlign: isNext ? "right" : "left",
+                      textAlign: isDesktop && isNext ? "right" : "left",
                       transition: "border-color 0.12s, background 0.12s",
                     }}
                     onMouseEnter={(e) => {
@@ -720,6 +726,7 @@ export default function SecurityGuidebook() {
                   >
                     <span
                       style={{
+                        flexShrink: 0,
                         fontSize: "9px",
                         letterSpacing: "0.14em",
                         textTransform: "uppercase",
@@ -733,16 +740,19 @@ export default function SecurityGuidebook() {
                       {label}
                       {isNext && <ChevronRight size={10} />}
                     </span>
+
                     {d && (
                       <span
                         style={{
-                          fontSize: "12px",
-                          color: T.text,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                          minWidth: 0,
                           maxWidth: "100%",
                           display: "block",
+                          fontSize: "12px",
+                          lineHeight: 1.5,
+                          color: T.text,
+                          whiteSpace: "normal",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
                         }}
                       >
                         {d.title}
