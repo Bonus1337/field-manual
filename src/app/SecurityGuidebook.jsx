@@ -20,6 +20,7 @@ import { exportAsPDF, exportAsMD } from "./utils/exportDoc";
 import {
   Markdown,
   HomeView,
+  AboutView,
   Sidebar,
   DocHeader,
   TableOfContents,
@@ -69,6 +70,7 @@ export default function SecurityGuidebook() {
   const t = UI[safeLang];
   const isDesktop = useIsDesktop();
   const isHome = !id || id === "home";
+  const isAbout = id === "about";
 
   useEffect(() => {
     const fid = "jb-mono-font";
@@ -148,7 +150,7 @@ export default function SecurityGuidebook() {
   }, [id, canon, navigate, safeLang]);
 
   useEffect(() => {
-    if (id && id !== "home" && !doc && canon?.length)
+    if (id && id !== "home" && id !== "about" && !doc && canon?.length)
       navigate(`/${safeLang}/doc/home`, { replace: true });
   }, [doc, canon, safeLang, navigate, id]);
 
@@ -570,6 +572,7 @@ export default function SecurityGuidebook() {
         )}
 
         {isHome && <HomeView docs={sidebarItems} onGoDoc={onGoDoc} safeLang={safeLang} />}
+        {isAbout && <AboutView safeLang={safeLang} />}
 
         {!isHome && doc && (
           <div

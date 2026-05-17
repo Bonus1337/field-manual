@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Search, X, ChevronRight, Home, Terminal } from "lucide-react";
+import { Search, X, ChevronRight, Home, Terminal, User } from "lucide-react";
 import { T } from "../constants/theme";
 import { SITE } from "../constants/config";
 import { DocButton } from "./DocButton";
@@ -560,7 +560,42 @@ export function Sidebar({
               </span>
             </button>
           </div>
-
+          <div style={{ marginBottom: "14px" }}>
+            <button
+              onClick={() => onGoDoc("about")}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "7px 10px",
+                background: currentDocId === "about" ? `${T.acc}0f` : "none",
+                border: "none",
+                borderLeft: `2px solid ${currentDocId === "about" ? T.acc : "transparent"}`,
+                borderRadius: "0 3px 3px 0",
+                cursor: "pointer",
+              }}
+            >
+              <User
+                size={12}
+                style={{
+                  color: currentDocId === "about" ? T.acc : T.textMuted,
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: T.mono,
+                  fontSize: "10px",
+                  letterSpacing: "0.12em",
+                  color: currentDocId === "about" ? T.textBright : T.textMuted,
+                }}
+              >
+                {safeLang === "pl" ? "O MNIE" : "ABOUT"}
+              </span>
+            </button>
+          </div>
           {pinned?.length ? (
             <div style={{ marginBottom: "18px" }}>
               <div

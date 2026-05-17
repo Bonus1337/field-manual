@@ -7,3 +7,4 @@ export { HomeView } from "./HomeView";
 export { Sidebar } from "./Sidebar";
 export { DocHeader } from "./DocHeader";
 export { TableOfContents } from "./TableOfContents";
+export { AboutView } from "./AboutView";

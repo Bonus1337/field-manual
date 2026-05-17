@@ -74,14 +74,7 @@ function getTeamVisual(key) {
 }
 
 function getFeatured(docs) {
-  const s = [...docs].sort(sortByDateDesc);
-
-  return (
-    s.find((d) => d.id === "network-infrastructure-security-introduction") ||
-    s.find((d) => d.id === "web-pentest-understanding-the-app-not-magic-payloads") ||
-    s.find((d) => d.id === "offsec-intro") ||
-    s[0]
-  );
+  return [...docs].sort(sortByDateDesc)[0];
 }
 
 function RecentItem({ doc, copy, onGoDoc }) {
