@@ -1,6 +1,5 @@
 ---
 title: "Linux Post-Exploitation: enumeracja i eskalacja uprawnień"
-description: "Praktyczny workflow analizy hosta Linux po uzyskaniu dostępu: użytkownicy, sudo, uprawnienia plików, SUID, cron, PATH, logi, Docker oraz mechanizmy ochronne."
 domain: network-infrastructure
 category: "Post Exploitation"
 tags: ["Linux", "Post Exploitation", "Privilege Escalation", "Enumeration, Hardening"]
@@ -8,6 +7,9 @@ team: red
 section: post-exploitation
 type: knowledge
 sourceTrack: netMaster
+difficulty: medium
+shortDescription: "Praktyczny workflow analizy hosta Linux po uzyskaniu dostępu: użytkownicy, sudo, uprawnienia plików, SUID, cron, PATH, logi, Docker oraz mechanizmy ochronne."
+updatedAt: "2026-07-21"
 ---
 
 # Linux Post-Exploitation: enumeracja i eskalacja uprawnień

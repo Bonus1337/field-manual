@@ -1,6 +1,5 @@
 ---
 title: "Linux Post-Exploitation: Enumeration and Privilege Escalation"
-description: "A practical workflow for analyzing a Linux host after gaining access: users, sudo, file permissions, SUID, cron, PATH, logs, Docker, and security mechanisms."
 domain: network-infrastructure
 category: "Post Exploitation"
 tags: ["Linux", "Post Exploitation", "Privilege Escalation", "Enumeration", "Hardening"]
@@ -8,6 +7,9 @@ team: red
 section: post-exploitation
 type: knowledge
 sourceTrack: netMaster
+difficulty: medium
+shortDescription: "A practical workflow for analyzing a Linux host after gaining access: users, sudo, file permissions, SUID, cron, PATH, logs, Docker, and security mechanisms"
+updatedAt: "2026-07-21"
 ---
 
 # Linux Post-Exploitation: Enumeration and Privilege Escalation
