@@ -2,10 +2,11 @@
 id: social-engineering-human-attack-surface
 title: "social engineering - attacking trust, context and routine"
 team: red-blue
-domain: osint-cti
-section: people-companies
+domain: social-engineering
+section: physical-security
 type: methodology
-angle: people-search-osint-workflow
+angle: onsite-recon-pretext-physical-access-human-trust-defense
+sourceTrack: social-engineering-sekurak
 tags:
   [
     "social-engineering",

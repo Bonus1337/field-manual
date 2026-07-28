@@ -2,12 +2,11 @@
 id: social-engineering-human-attack-surface
 title: "socjotechnika - atakowanie zaufania, kontekstu i rutyny"
 team: red-blue
+domain: social-engineering
+section: physical-security
 type: methodology
-domain: osint-cti
-section: people-companies
-type: methodology
-angle: people-search-osint-workflow
-sourceTrack: netsec-sekurak
+angle: onsite-recon-pretext-physical-access-human-trust-defense
+sourceTrack: social-engineering-sekurak
 tags:
   [
     "social-engineering",
